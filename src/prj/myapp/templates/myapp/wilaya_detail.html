@@ -1,0 +1,8 @@
+{% extends 'myapp/base.html' %}
+
+{% block content %}
+<h1>Détails de la Wilaya</h1>
+<p><strong>Code:</strong> {{ wilaya.code }}</p>
+<p><strong>Nom:</strong> {{ wilaya.name }}</p>
+<a href="{% url 'wilaya-list' %}" class="btn btn-secondary">Retour à la liste</a>
+{% endblock %}

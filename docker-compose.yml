@@ -1,0 +1,33 @@
+services:
+  djangoapp:
+    build:
+      context: .
+    container_name: djangoapp
+    command: sh -c "cd prj && python manage.py makemigrations && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./src:/app
+    working_dir: /app
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      mydb:
+        condition: service_healthy
+
+  mydb:
+    image: mysql
+    container_name: mydb
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: django_db
+      MYSQL_USER: django_user
+      MYSQL_PASSWORD: django_password
+    ports:
+      - "127.0.0.1:33306:3306"
+    volumes:
+      - ./db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+

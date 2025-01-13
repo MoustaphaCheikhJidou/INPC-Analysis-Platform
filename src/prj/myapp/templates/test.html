@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Template</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'styles.css' %}">
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">
+                <img src="{% static 'logo.png' %}" alt="Prixapp Logo" width="230">
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="#">Dashboard</a></li>
+                    <li><a href="#">Produits</a></li>
+                    <li><a href="#">Paniers</a></li>
+                    <li><a href="#">Point vente</a></li>
+                </ul>
+            </nav>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="stats">
+                <div class="card">
+                    <h3>Spent this month</h3>
+                    <p>${{ spent_this_month }}</p>
+                </div>
+                <div class="card">
+                    <h3>New clients</h3>
+                    <p>{{ new_clients }}</p>
+                </div>
+                <div class="card">
+                    <h3>Earnings</h3>
+                    <p>${{ earnings }}</p>
+                </div>
+                <div class="card">
+                    <h3>Activity</h3>
+                    <p>${{ activity }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

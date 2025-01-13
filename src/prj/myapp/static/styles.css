@@ -1,0 +1,61 @@
+/* Navbar styles */
+.navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    display: flex; /* Utilisation de Flexbox pour l'alignement */
+    align-items: center; /* Aligne les éléments verticalement */
+    justify-content: space-between; /* Espace entre le logo et les liens */
+    background-color: #333; /* Couleur de fond */
+    padding: 10px 20px;
+    color: white;
+    z-index: 1000;
+}
+
+.navbar .logo img {
+    height: 50px; /* Taille du logo */
+}
+
+.navbar nav ul {
+    list-style: none;
+    display: flex; /* Affiche les éléments horizontalement */
+    gap: 20px; /* Espacement entre les liens */
+    margin: 0;
+    padding: 0;
+}
+
+.navbar nav ul li {
+    display: inline;
+}
+
+.navbar nav ul li a {
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+    transition: color 0.3s;
+    font-size: 16px;
+}
+
+.navbar nav ul li a:hover {
+    color: #ffcc00;
+}
+
+/* Main content styles */
+.main-content {
+    padding: 100px 20px; /* Ajoute un espace sous la navbar */
+}
+
+.stats {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.card {
+    background: #f4f4f4;
+    padding: 20px;
+    border-radius: 5px;
+    flex: 1;
+    text-align: center;
+}

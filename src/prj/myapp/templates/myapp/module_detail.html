@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}<title>Module</title>{% endblock %}
+
+{% block content %}
+
+<h1 class="text-center"> Details of Module</h1>
+<ul class="list-group p-5">
+    <li class="list-group-item"><b>ID</b>: {{module.id}}</li>
+    <li class="list-group-item"><b>Code</b>: {{module.code}}</li>
+    <li class="list-group-item"><b>Name</b>: {{module.name}}</li>
+    <li class="list-group-item"><b>Volume CM</b>: {{module.cm_hours}}</li>
+    <li class="list-group-item"><b>Volume TD</b>: {{module.td_hours}}</li>
+    <li class="list-group-item"><b>Volume TP</b>: {{module.tp_hours}}</li>
+</ul>
+
+
+{% endblock %}

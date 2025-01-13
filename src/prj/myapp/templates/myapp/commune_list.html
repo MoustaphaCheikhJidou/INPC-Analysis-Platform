@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Commune List</h1>
+<a href="{% url 'commune_create' %}" class="btn btn-primary">Create New Commune</a>
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Code</th>
+            <th>Name</th>
+            <th>Moughataa</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for commune in object_list %}
+        <tr>
+            <td>{{ commune.id }}</td>
+            <td>{{ commune.code }}</td>
+            <td>{{ commune.name }}</td>
+            <td>{{ commune.moughataa.label }}</td>
+            <td>
+                <a href="{% url 'commune_detail' commune.pk %}" class="btn btn-info">View</a>
+                <a href="{% url 'commune_update' commune.pk %}" class="btn btn-warning">Edit</a>
+                <a href="{% url 'commune_delete' commune.pk %}" class="btn btn-danger">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

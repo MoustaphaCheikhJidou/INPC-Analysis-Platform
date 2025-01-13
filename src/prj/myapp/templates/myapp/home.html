@@ -1,0 +1,19 @@
+<!-- templates/myapp/home.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Bienvenue sur l'application de gestion de l'INPC</h1>
+    <p>Veuillez sélectionner une entité à gérer :</p>
+
+    <div class="list-group">
+        <a href="{% url 'wilaya-list' %}" class="list-group-item list-group-item-action">Gérer les Wilayas</a>
+        <a href="{% url 'moughataa-list' %}" class="list-group-item list-group-item-action">Gérer les Moughataas</a>
+        <a href="{% url 'commune-list' %}" class="list-group-item list-group-item-action">Gérer les Communes</a>
+        <a href="{% url 'product-list' %}" class="list-group-item list-group-item-action">Gérer les Produits</a>
+        <a href="{% url 'partproduct-list' %}" class="list-group-item list-group-item-action">Gérer les Paniers de Produits</a>
+        <a href="{% url 'pointofsale-list' %}" class="list-group-item list-group-item-action">Gérer les Points de Vente</a>
+        <a href="{% url 'productprice-list' %}" class="list-group-item list-group-item-action">Gérer les Prix des Produits</a>
+    </div>
+</div>
+{% endblock %}

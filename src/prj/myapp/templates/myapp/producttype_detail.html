@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Product Type Details</h1>
+<ul>
+    <li><strong>ID:</strong> {{ producttype.id }}</li>
+    <li><strong>Code:</strong> {{ producttype.code }}</li>
+    <li><strong>Label:</strong> {{ producttype.label }}</li>
+    <li><strong>Description:</strong> {{ producttype.description }}</li>
+</ul>
+<a href="{% url 'producttype_list' %}" class="btn btn-secondary">Back to List</a>
+{% endblock %}

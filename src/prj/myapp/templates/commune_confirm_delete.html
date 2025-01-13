@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Supprimer la Commune - ANSADE{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="card shadow-lg">
+        <div class="card-header bg-danger text-white">
+            <h3 class="card-title text-center">
+                <i class="fas fa-exclamation-triangle"></i> Confirmation de Suppression
+            </h3>
+        </div>
+        <div class="card-body text-center">
+            <p class="h5 mb-4">Êtes-vous sûr de vouloir supprimer la commune suivante ?</p>
+            <p class="h4 text-danger mb-4"><strong>{{ object }}</strong></p>
+            <p class="text-muted">Cette action est irréversible. Toutes les données associées à cette commune seront également supprimées.</p>
+        </div>
+        <div class="card-footer bg-light text-center">
+            <form action="" method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger btn-lg">
+                    <i class="fas fa-trash"></i> Confirmer la Suppression
+                </button>
+                <a href="{% url 'commune-list' %}" class="btn btn-secondary btn-lg">
+                    <i class="fas fa-times"></i> Annuler
+                </a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

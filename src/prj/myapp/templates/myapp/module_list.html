@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}<title>Module</title>{% endblock %}
+
+{% block content %}
+
+{% if module_list %}
+<table class="table">
+    <thead>
+      <tr>
+        <th scope="col">id</th>
+        <th scope="col">code</th>
+        <th scope="col">name</th>
+        <th scope="col">ACtions</th>
+      </tr>
+    </thead>
+    <tbody>
+        {% for w in module_list %}
+      <tr>
+        <th scope="row">{{ w.id }}</th>
+        <td>{{ w.code }}</td>
+        <td>{{ w.name }}</td>
+        <td>
+          <a href="/view/{{ w.id }}" class="btn btn-info">View</a> | <a href="/put/{{ w.id }}" class="btn btn-primary">Edit</a> | <a href="/del/{{ w.id }}" class="btn btn-danger">Delete</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p>There are no modules in the database.</p>
+{% endif %}
+{% endblock %}

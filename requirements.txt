@@ -1,0 +1,6 @@
+Django
+mysqlclient
+openpyxl
+tablib
+django-import-export
+geopy

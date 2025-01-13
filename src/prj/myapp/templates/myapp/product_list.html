@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Product List</h1>
+<a href="{% url 'product_create' %}" class="btn btn-primary">Create New Product</a>
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Code</th>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Unit Measure</th>
+            <th>Product Type</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for product in object_list %}
+        <tr>
+            <td>{{ product.id }}</td>
+            <td>{{ product.code }}</td>
+            <td>{{ product.name }}</td>
+            <td>{{ product.description }}</td>
+            <td>{{ product.unit_measure }}</td>
+            <td>{{ product.product_type.label }}</td>
+            <td>
+                <a href="{% url 'product_detail' product.pk %}" class="btn btn-info">View</a>
+                <a href="{% url 'product_update' product.pk %}" class="btn btn-warning">Edit</a>
+                <a href="{% url 'product_delete' product.pk %}" class="btn btn-danger">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
