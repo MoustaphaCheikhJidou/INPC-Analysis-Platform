@@ -2,7 +2,7 @@
 
 {% block content %}
 <h1>Commune List</h1>
-<a href="{% url 'commune_create' %}" class="btn btn-primary">Create New Commune</a>
+<a href="{% url 'commune-create' %}" class="btn btn-primary">Create New Commune</a>
 <table class="table">
     <thead>
         <tr>
@@ -21,9 +21,9 @@
             <td>{{ commune.name }}</td>
             <td>{{ commune.moughataa.label }}</td>
             <td>
-                <a href="{% url 'commune_detail' commune.pk %}" class="btn btn-info">View</a>
-                <a href="{% url 'commune_update' commune.pk %}" class="btn btn-warning">Edit</a>
-                <a href="{% url 'commune_delete' commune.pk %}" class="btn btn-danger">Delete</a>
+                <a href="{% url 'commune-detail' commune.pk %}" class="btn btn-info">View</a>
+                <a href="{% url 'commune-update' commune.pk %}" class="btn btn-warning">Edit</a>
+                <a href="{% url 'commune-delete' commune.pk %}" class="btn btn-danger">Delete</a>
             </td>
         </tr>
         {% endfor %}

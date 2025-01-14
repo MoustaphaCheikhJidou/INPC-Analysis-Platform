@@ -1,20 +1,25 @@
+version: '3.8'
+
 services:
   djangoapp:
     build:
       context: .
     container_name: djangoapp
-    command: sh -c "cd prj && python manage.py makemigrations && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    command: sh -c "python manage.py makemigrations && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
     volumes:
-      - ./src:/app
-    working_dir: /app
+      - ./src:/app  # Monte le code source dans le conteneur
+    working_dir: /app/prj  # Définit le répertoire de travail sur /app/prj
     ports:
-      - "127.0.0.1:8000:8000"
+      - "127.0.0.1:23231:8000"  # Port hôte changé à 23231
     depends_on:
       mydb:
         condition: service_healthy
+    environment:
+      - DEBUG=1  # Définir DEBUG=0 en production
+      - DATABASE_URL=mysql://django_user:django_password@mydb:3306/django_db
 
   mydb:
-    image: mysql
+    image: mysql:8.0
     container_name: mydb
     restart: always
     environment:
@@ -23,11 +28,13 @@ services:
       MYSQL_USER: django_user
       MYSQL_PASSWORD: django_password
     ports:
-      - "127.0.0.1:33306:3306"
+      - "127.0.0.1:33061:3306"  # Port hôte changé à 33061
     volumes:
-      - ./db:/var/lib/mysql
+      - mysql_data:/var/lib/mysql  # Volume nommé pour persister les données de la base de données
     healthcheck:
-      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       timeout: 20s
       retries: 10
 
+volumes:
+  mysql_data:  # Volume nommé pour la base de données

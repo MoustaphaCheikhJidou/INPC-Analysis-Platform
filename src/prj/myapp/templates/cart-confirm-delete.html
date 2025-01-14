@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Supprimer un produit du panier{% endblock %}
+
+{% block content %}
+<h1 class="text-danger mb-4">Confirmer la suppression</h1>
+<p>Voulez-vous vraiment supprimer le produit <strong>{{ object.product.name }}</strong> du panier <strong>{{ object.cart.name }}</strong> ?</p>
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Supprimer</button>
+    <a href="{% url 'cartproducts-list' %}" class="btn btn-secondary">Annuler</a>
+</form>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Détails du Produit{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center mb-4">Détails du Produit</h1>
+    <table class="table table-bordered">
+        <tr>
+            <th>Code</th>
+            <td>{{ product.code }}</td>
+        </tr>
+        <tr>
+            <th>Nom</th>
+            <td>{{ product.name }}</td>
+        </tr>
+        <tr>
+            <th>Description</th>
+            <td>{{ product.description }}</td>
+        </tr>
+        <tr>
+            <th>Unité de Mesure</th>
+            <td>{{ product.unit_measure }}</td>
+        </tr>
+        <tr>
+            <th>Type de Produit</th>
+            <td>{{ product.product_type }}</td>
+        </tr>
+    </table>
+    <div class="text-center">
+        <a href="{% url 'product-list' %}" class="btn btn-secondary">Retour à la liste</a>
+    </div>
+</div>
+{% endblock %}

@@ -2,7 +2,7 @@
 
 {% block content %}
 <h1>Moughataa List</h1>
-<a href="{% url 'moughataa_create' %}" class="btn btn-primary">Create New Moughataa</a>
+<a href="{% url 'moughataa-create' %}" class="btn btn-primary">Create New Moughataa</a>
 <table class="table">
     <thead>
         <tr>
@@ -21,9 +21,9 @@
             <td>{{ moughataa.label }}</td>
             <td>{{ moughataa.wilaya.name }}</td>
             <td>
-                <a href="{% url 'moughataa_detail' moughataa.pk %}" class="btn btn-info">View</a>
-                <a href="{% url 'moughataa_update' moughataa.pk %}" class="btn btn-warning">Edit</a>
-                <a href="{% url 'moughataa_delete' moughataa.pk %}" class="btn btn-danger">Delete</a>
+                <a href="{% url 'moughataa-detail' moughataa.pk %}" class="btn btn-info">View</a>
+                <a href="{% url 'moughataa-update' moughataa.pk %}" class="btn btn-warning">Edit</a>
+                <a href="{% url 'moughataa-delete' moughataa.pk %}" class="btn btn-danger">Delete</a>
             </td>
         </tr>
         {% endfor %}

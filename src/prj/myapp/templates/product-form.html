@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Ajouter un Produit{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="text-center">{% if object.pk %}Modifier un Produit{% else %}Ajouter un Produit{% endif %}</h3>
+                </div>
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+
+                        <!-- Field: Code -->
+                        <div class="mb-3">
+                            <label for="id_code" class="form-label">Code</label>
+                            <input type="text" name="code" id="id_code" class="form-control" value="{{ form.code.value|default:'' }}">
+                            {% if form.code.errors %}
+                                <div class="text-danger">{{ form.code.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Field: Name -->
+                        <div class="mb-3">
+                            <label for="id_name" class="form-label">Nom</label>
+                            <input type="text" name="name" id="id_name" class="form-control" value="{{ form.name.value|default:'' }}">
+                            {% if form.name.errors %}
+                                <div class="text-danger">{{ form.name.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Field: Description -->
+                        <div class="mb-3">
+                            <label for="id_description" class="form-label">Description</label>
+                            <textarea name="description" id="id_description" class="form-control">{{ form.description.value|default:'' }}</textarea>
+                            {% if form.description.errors %}
+                                <div class="text-danger">{{ form.description.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Field: Unit Measure -->
+                        <div class="mb-3">
+                            <label for="id_unit_measure" class="form-label">Unité de Mesure</label>
+                            <input type="text" name="unit_measure" id="id_unit_measure" class="form-control" value="{{ form.unit_measure.value|default:'' }}">
+                            {% if form.unit_measure.errors %}
+                                <div class="text-danger">{{ form.unit_measure.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Field: Product Type -->
+                        <div class="mb-3">
+                            <label for="id_product_type" class="form-label">Type de Produit</label>
+                            <select name="product_type" id="id_product_type" class="form-control">
+                                {% for product_type in product_types %}
+                                    <option value="{{ product_type.id }}" 
+                                        {% if product_type.id == form.product_type.value %}selected{% endif %}>
+                                        {{ product_type.label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            {% if form.product_type.errors %}
+                                <div class="text-danger">{{ form.product_type.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+
+                        <!-- Submit Button -->
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-success">Enregistrer</button>
+                            <a href="{% url 'product-list' %}" class="btn btn-secondary">Annuler</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

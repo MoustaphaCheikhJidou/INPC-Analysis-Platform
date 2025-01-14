@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Détails du Point de Vente{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center mb-4">Détails du Point de Vente</h1>
+    <div class="card shadow-lg">
+        <div class="card-body">
+            <table class="table table-bordered">
+                <tr>
+                    <th>Code :</th>
+                    <td>{{ pointVente.code }}</td>
+                </tr>
+                <tr>
+                    <th>Type :</th>
+                    <td>{{ pointVente.type }}</td>
+                </tr>
+                <tr>
+                    <th>Latitude :</th>
+                    <td>{{ pointVente.gps_lat }}</td>
+                </tr>
+                <tr>
+                    <th>Longitude :</th>
+                    <td>{{ pointVente.gps_lon }}</td>
+                </tr>
+                <tr>
+                    <th>Commune :</th>
+                    <td>{{ pointVente.commune.name }}</td> <!-- Adjust based on your Commune model -->
+                </tr>
+            </table>
+        </div>
+        <div class="card-footer text-center">
+            <a href="{% url 'pointofsale-list' %}" class="btn btn-secondary">Retour à la liste</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

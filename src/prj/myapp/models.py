@@ -85,13 +85,13 @@ class Cart(models.Model):
         return self.name
 
 
-# Cart Products Model
 class CartProducts(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    cart_product = models.ForeignKey(Cart, on_delete=models.CASCADE)
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE)  # Renommé en 'cart'
     weight = models.FloatField()
     date_from = models.DateField()
     date_to = models.DateField(null=True, blank=True)
 
     def __str__(self):
-        return f"{self.cart_product.name} - {self.product.name}"
+        return f"{self.cart.name} - {self.product.name}"
+

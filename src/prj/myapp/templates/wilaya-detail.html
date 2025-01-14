@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Détails de la Wilaya</h1>
+    <div class="card">
+        <div class="card-body">
+            <p><strong>Code:</strong> {{ object.code }}</p>
+            <p><strong>Nom:</strong> {{ object.name }}</p>
+        </div>
+    </div>
+    <a href="{% url 'wilaya-list' %}" class="btn btn-secondary mt-3">Retour à la liste</a>
+</div>
+{% endblock %}
