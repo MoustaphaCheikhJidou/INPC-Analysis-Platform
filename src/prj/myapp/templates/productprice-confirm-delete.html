@@ -3,11 +3,19 @@
 {% block title %}Supprimer un prix{% endblock %}
 
 {% block content %}
-<h1 class="text-danger mb-4">Confirmer la suppression</h1>
-<p>Voulez-vous vraiment supprimer ce prix pour le produit <strong>{{ object.product.name }}</strong> ?</p>
-<form method="post">
-    {% csrf_token %}
-    <button type="submit" class="btn btn-danger">Supprimer</button>
-    <a href="{% url 'productprice_list' %}" class="btn btn-secondary">Annuler</a>
-</form>
+<div class="container mt-4">
+    <h1 class="text-danger mb-4">Confirmer la suppression</h1>
+    
+    <p>
+        Voulez-vous vraiment supprimer ce prix pour le produit 
+        <strong>{{ object.product.name }}</strong> ?
+    </p>
+
+    <!-- On peut aussi afficher d'autres champs si besoin : date, point_of_sale, etc. -->
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Supprimer</button>
+        <a href="{% url 'productprice-list' %}" class="btn btn-secondary">Annuler</a>
+    </form>
+</div>
 {% endblock %}

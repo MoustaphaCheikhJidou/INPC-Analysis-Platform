@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Détail d'un produit dans le panier{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Détail du produit dans le panier</h1>
+<p><strong>Produit :</strong> {{ object.product.name }}</p>
+<p><strong>Panier :</strong> {{ object.cart.name }}</p>
+<p><strong>Poids :</strong> {{ object.weight }}</p>
+<p><strong>Date d'ajout :</strong> {{ object.date_from }}</p>
+<a href="{% url 'cartproducts-list' %}" class="btn btn-secondary">Retour à la liste</a>
+{% endblock %}

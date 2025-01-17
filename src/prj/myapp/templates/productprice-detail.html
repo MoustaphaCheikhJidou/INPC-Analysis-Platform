@@ -3,9 +3,21 @@
 {% block title %}Détail du prix du produit{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Détail du prix</h1>
-<p><strong>Produit :</strong> {{ object.product.name }}</p>
-<p><strong>Prix :</strong> {{ object.value }}</p>
-<p><strong>Date :</strong> {{ object.date_from }}</p>
-<a href="{% url 'productprice_list' %}" class="btn btn-secondary">Retour à la liste</a>
+<div class="container mt-4">
+    <h1 class="mb-4">Détail du prix</h1>
+
+    <p><strong>Produit :</strong> {{ object.product.name }}</p>
+    
+    <!-- Si votre PointOfSale a un champ "name" ou "code", ajustez selon votre cas -->
+    <p><strong>Point de Vente :</strong> {{ object.point_of_sale }}</p>
+    
+    <p><strong>Prix :</strong> {{ object.value }}</p>
+
+    <p><strong>Date Début :</strong> {{ object.date_from|date:"j M Y" }}</p>
+
+    <!-- Affiche la date de fin, ou un tiret si null -->
+    <p><strong>Date Fin :</strong> {{ object.date_to|default_if_none:"-"|date:"j M Y" }}</p>
+
+    <a href="{% url 'productprice-list' %}" class="btn btn-secondary">Retour à la liste</a>
+</div>
 {% endblock %}

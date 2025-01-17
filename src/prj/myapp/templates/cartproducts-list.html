@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Liste des produits dans les paniers{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center">Liste des produits dans les paniers</h1>
+    <a href="{% url 'cartproducts-create' %}" class="btn btn-primary mb-4">Ajouter un produit au panier</a>
+
+    <table class="table table-bordered">
+        <thead class="table-dark">
+            <tr>
+                <th>Produit</th>
+                <th>Panier</th>
+                <th>Poids</th>
+                <th>Date d'ajout</th>
+                <th>Date de fin</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cartproduct in cart_products %}
+            <tr>
+                <!-- Ici, vérifiez le nom du champ ForeignKey vers "Product" -->
+                <td>{{ cartproduct.product.name }}</td>
+                <!-- Ici, vérifiez le nom du champ ForeignKey vers "Cart" -->
+                <td>{{ cartproduct.cart.name }}</td>
+                
+                <td>{{ cartproduct.weight }}</td>
+                
+                <!-- Formatage des dates (exemple) -->
+                <td>{{ cartproduct.date_from|date:"M. j, Y" }}</td>
+                <td>{{ cartproduct.date_to|default_if_none:"-"|date:"M. j, Y" }}</td>
+                
+                <td>
+                    <a href="{% url 'cartproducts-detail' cartproduct.pk %}" class="btn btn-info btn-sm">Voir</a>
+                    <a href="{% url 'cartproducts-update' cartproduct.pk %}" class="btn btn-warning btn-sm">Modifier</a>
+                    <a href="{% url 'cartproducts-delete' cartproduct.pk %}" class="btn btn-danger btn-sm">Supprimer</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="text-center">Aucun produit n'a encore été ajouté aux paniers.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

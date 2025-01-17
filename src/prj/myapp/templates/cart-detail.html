@@ -1,12 +1,15 @@
 {% extends "base.html" %}
 
-{% block title %}Détail d'un produit dans le panier{% endblock %}
+{% block title %}Détail du panier : {{ object.name }}{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Détail du produit dans le panier</h1>
-<p><strong>Produit :</strong> {{ object.product.name }}</p>
-<p><strong>Panier :</strong> {{ object.cart.name }}</p>
-<p><strong>Poids :</strong> {{ object.weight }}</p>
-<p><strong>Date d'ajout :</strong> {{ object.date_from }}</p>
-<a href="{% url 'cartproducts-list' %}" class="btn btn-secondary">Retour à la liste</a>
+<div class="container mt-5">
+
+    <h1 class="mb-4">Détails du Panier : {{ object.name }}</h1>
+    <p><strong>Code :</strong> {{ object.code }}</p>
+    <p><strong>Description :</strong> {{ object.description }}</p>
+
+
+    <a href="{% url 'cart-list' %}" class="btn btn-secondary">Retour à la liste des paniers</a>
+</div>
 {% endblock %}

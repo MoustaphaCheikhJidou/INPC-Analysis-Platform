@@ -1,35 +1,35 @@
 {% extends "base.html" %}
 
-{% block title %}Liste des produits dans le panier{% endblock %}
+{% block title %}Liste des Paniers{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Liste des produits dans le panier</h1>
-<a href="{% url 'cartproducts-create' %}" class="btn btn-primary mb-3">Ajouter un produit au panier</a>
+<div class="container mt-5">
+    <h1 class="text-center">Liste des Paniers</h1>
+    <a href="{% url 'cart-create' %}" class="btn btn-primary mb-4">Créer un nouveau panier</a>
 
-<table class="table table-bordered">
-    <thead class="table-dark">
-        <tr>
-            <th>Produit</th>
-            <th>Panier</th>
-            <th>Poids</th>
-            <th>Date d'ajout</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for cartproduct in object_list %}
-        <tr>
-            <td>{{ cartproduct.product.name }}</td>
-            <td>{{ cartproduct.cart.name }}</td>
-            <td>{{ cartproduct.weight }}</td>
-            <td>{{ cartproduct.date_from }}</td>
-            <td>
-                <a href="{% url 'cartproducts-detail' cartproduct.pk %}" class="btn btn-info btn-sm">Voir</a>
-                <a href="{% url 'cartproducts-update' cartproduct.pk %}" class="btn btn-warning btn-sm">Modifier</a>
-                <a href="{% url 'cartproducts-delete' cartproduct.pk %}" class="btn btn-danger btn-sm">Supprimer</a>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+    <table class="table table-bordered">
+        <thead class="table-dark">
+            <tr>
+                <th>Code</th>
+                <th>Nom</th>
+                <th>Description</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cart in carts %}
+            <tr>
+                <td>{{ cart.code }}</td>
+                <td>{{ cart.name }}</td>
+                <td>{{ cart.description }}</td>
+                <td>
+                    <a href="{% url 'cart-detail' cart.pk %}" class="btn btn-info btn-sm">Voir</a>
+                    <a href="{% url 'cart-update' cart.pk %}" class="btn btn-warning btn-sm">Modifier</a>
+                    <a href="{% url 'cart-delete' cart.pk %}" class="btn btn-danger btn-sm">Supprimer</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 {% endblock %}

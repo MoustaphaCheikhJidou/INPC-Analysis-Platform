@@ -1,15 +1,27 @@
 {% extends "base.html" %}
 
-{% block title %}Ajouter/Modifier un prix{% endblock %}
+{% block title %}{% if object %}Modifier{% else %}Ajouter{% endif %} un prix{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">{% if object %}Modifier{% else %}Ajouter{% endif %} un prix</h1>
-<form method="post" class="needs-validation" novalidate>
-    {% csrf_token %}
-    {{ form.as_p }}
-    <div class="mt-3">
-        <button type="submit" class="btn btn-success">Enregistrer</button>
-        <a href="{% url 'productprice-list' %}" class="btn btn-secondary">Annuler</a>
-    </div>
-</form>
+<div class="container mt-4">
+    <h1 class="mb-4">{% if object %}Modifier{% else %}Ajouter{% endif %} un prix</h1>
+
+    <form method="post" class="needs-validation" novalidate>
+        {% csrf_token %}
+        {{ form.as_p }}
+
+        <!-- Par exemple, si vous voulez personnaliser l’affichage champ par champ :
+        <div class="mb-3">
+            <label for="id_product">Produit</label>
+            {{ form.product }}
+        </div>
+        ... etc.
+        -->
+
+        <div class="mt-3">
+            <button type="submit" class="btn btn-success">Enregistrer</button>
+            <a href="{% url 'productprice-list' %}" class="btn btn-secondary">Annuler</a>
+        </div>
+    </form>
+</div>
 {% endblock %}
