@@ -147,3 +147,4 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'elmoustapha.cheikh.jiddou@gmail.com'
 EMAIL_HOST_PASSWORD = 'rmjt ndxq amwi oarc'
+CSRF_TRUSTED_ORIGINS = ['http://138.201.52.29:25231']'
