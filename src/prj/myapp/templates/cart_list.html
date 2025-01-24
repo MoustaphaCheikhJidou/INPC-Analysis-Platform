@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Liste des Paniers{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Messages éventuels (succès, erreurs) -->
+    {% if messages %}
+      {% for msg in messages %}
+        <div class="alert alert-{{ msg.tags }}">{{ msg }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <h1 class="mb-4 text-center">Liste des Paniers</h1>
+
+    <!-- Formulaire GET : Recherche -->
+    <form method="GET" action="" class="mb-4">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label for="searchInput" class="form-label">Recherche :</label>
+                <input type="text" id="searchInput" name="search"
+                       class="form-control" value="{{ search }}"
+                       placeholder="Code ou Nom du Panier...">
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-secondary w-100">
+                    Filtrer / Rechercher
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Bouton Export Excel -->
+    <div class="mb-3">
+        <button id="exportExcelBtn" class="btn btn-success">
+            Exporter en Excel
+        </button>
+    </div>
+
+    <!-- Formulaire Import Excel -->
+    <form method="POST" action="{% url 'cart-import' %}" enctype="multipart/form-data" class="mb-4">
+        {% csrf_token %}
+        <div class="input-group">
+            <input type="file" name="excel_file" class="form-control" accept=".xlsx,.xls">
+            <button class="btn btn-primary" type="submit">Importer</button>
+        </div>
+    </form>
+
+    <!-- Lien de création d'un nouveau panier -->
+    <div class="mb-3 text-end">
+        <a href="{% url 'cart-create' %}" class="btn btn-primary">Créer un nouveau panier</a>
+    </div>
+
+    <!-- Tableau des Paniers -->
+    <table class="table table-bordered">
+        <thead class="table-dark">
+            <tr>
+                <th>Code</th>
+                <th>Nom</th>
+                <th>Description</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="cartTableBody">
+            {% for cart in carts %}
+            <tr>
+                <td>{{ cart.code }}</td>
+                <td>{{ cart.name }}</td>
+                <td>{{ cart.description }}</td>
+                <td>
+                    <a href="{% url 'cart-detail' cart.pk %}" class="btn btn-info btn-sm">Voir</a>
+                    <a href="{% url 'cart-update' cart.pk %}" class="btn btn-warning btn-sm">Modifier</a>
+                    <a href="{% url 'cart-delete' cart.pk %}" class="btn btn-danger btn-sm"
+                       onclick="return confirm('Voulez-vous vraiment supprimer ce panier ?');">
+                        Supprimer
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4">Aucun panier trouvé.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Pagination statique (non-AJAX) -->
+    {% if carts.has_other_pages %}
+    <nav id="staticPagination" class="mt-3">
+        <ul class="pagination">
+            {% if carts.has_previous %}
+            <li class="page-item">
+                <a class="page-link"
+                   href="?page={{ carts.previous_page_number }}&search={{ search }}">
+                    Précédent
+                </a>
+            </li>
+            {% endif %}
+            <li class="page-item disabled">
+                <span class="page-link">
+                    Page {{ carts.number }} / {{ carts.paginator.num_pages }}
+                </span>
+            </li>
+            {% if carts.has_next %}
+            <li class="page-item">
+                <a class="page-link"
+                   href="?page={{ carts.next_page_number }}&search={{ search }}">
+                    Suivant
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    <!-- Pagination AJAX (masquée au départ) -->
+    <nav class="mt-3 d-none" id="ajaxPagination">
+        <ul class="pagination justify-content-center">
+            <li class="page-item">
+                <button class="page-link" id="prevPageBtn">Précédent</button>
+            </li>
+            <li class="page-item disabled">
+                <span class="page-link" id="pageInfo">Page ? / ?</span>
+            </li>
+            <li class="page-item">
+                <button class="page-link" id="nextPageBtn">Suivant</button>
+            </li>
+        </ul>
+    </nav>
+</div>
+
+<!-- Script AJAX pour recherche/pagination, et Export Excel -->
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+    const searchInput = document.getElementById("searchInput");
+    const cartTableBody = document.getElementById("cartTableBody");
+    const staticPagination = document.getElementById("staticPagination");
+    const ajaxPagination = document.getElementById("ajaxPagination");
+    const prevPageBtn = document.getElementById("prevPageBtn");
+    const nextPageBtn = document.getElementById("nextPageBtn");
+    const pageInfo = document.getElementById("pageInfo");
+    const exportExcelBtn = document.getElementById("exportExcelBtn");
+
+    let currentPage = 1;
+
+    function activateAjaxMode() {
+        if (staticPagination) {
+            staticPagination.classList.add("d-none");
+        }
+        ajaxPagination.classList.remove("d-none");
+    }
+
+    function fetchCarts(page=1) {
+        const searchVal = searchInput.value.trim();
+        let url = "/cart/?page=" + page;
+        if (searchVal) {
+            url += "&search=" + encodeURIComponent(searchVal);
+        }
+
+        fetch(url, {
+            headers: { "X-Requested-With": "XMLHttpRequest" }
+        })
+        .then(response => response.json())
+        .then(data => {
+            activateAjaxMode();
+            cartTableBody.innerHTML = "";
+
+            data.carts.forEach(cart => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${cart.code}</td>
+                    <td>${cart.name}</td>
+                    <td>${cart.description}</td>
+                    <td>
+                        <!-- En mode AJAX, vous pourriez recréer ici les liens "Voir / Modifier / Supprimer" si besoin -->
+                    </td>
+                `;
+                cartTableBody.appendChild(row);
+            });
+
+            currentPage = data.pagination.current_page;
+            pageInfo.textContent = "Page " + currentPage + " / " + data.pagination.num_pages;
+            prevPageBtn.disabled = !data.pagination.has_previous;
+            nextPageBtn.disabled = !data.pagination.has_next;
+        })
+        .catch(err => console.error("Erreur AJAX :", err));
+    }
+
+    // Recherche réactive (keyup)
+    searchInput.addEventListener("keyup", () => {
+        currentPage = 1;
+        fetchCarts(currentPage);
+    });
+
+    // Pagination AJAX
+    prevPageBtn.addEventListener("click", () => {
+        if (currentPage > 1) {
+            fetchCarts(currentPage - 1);
+        }
+    });
+    nextPageBtn.addEventListener("click", () => {
+        fetchCarts(currentPage + 1);
+    });
+
+    // Export Excel
+    exportExcelBtn.addEventListener("click", () => {
+        const searchVal = searchInput.value.trim();
+        let url = "/cart/?export=excel";
+        if (searchVal) {
+            url += "&search=" + encodeURIComponent(searchVal);
+        }
+        window.location.href = url; // Déclenche le téléchargement du fichier Excel
+    });
+});
+</script>
+{% endblock %}

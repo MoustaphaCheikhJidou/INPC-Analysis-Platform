@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<!-- Messages (feedback utilisateur) -->
+{% if messages %}
+  {% for msg in messages %}
+    <div class="alert alert-{{ msg.tags }}">{{ msg }}</div>
+  {% endfor %}
+{% endif %}
+
+<br><br>
+<form method="GET" action="" class="mb-4">
+    <div class="row g-3">
+        <!-- Commune -->
+        <div class="col-md-3">
+            <label for="communeSelect" class="form-label">Commune :</label>
+            <select id="communeSelect" name="commune" class="form-select">
+                <option value="">-- Toutes --</option>
+                {% for c in communes %}
+                    <option value="{{ c.code }}"
+                            {% if c.code|stringformat:"s" == selected_commune %} selected {% endif %}>
+                        {{ c.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Type -->
+        <div class="col-md-3">
+            <label for="typeSelect" class="form-label">Type :</label>
+            <select id="typeSelect" name="type" class="form-select">
+                <option value="">-- Tous --</option>
+                {% for t in available_types %}
+                    <option value="{{ t }}"
+                            {% if t == selected_type %} selected {% endif %}>
+                        {{ t }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Recherche -->
+        <div class="col-md-3">
+            <label for="searchInput" class="form-label">Recherche :</label>
+            <input type="text" id="searchInput" name="search" class="form-control"
+                   value="{{ search }}" placeholder="Code ou Type...">
+        </div>
+
+        <div class="col-md-3 d-flex align-items-end">
+            <button type="submit" class="btn btn-secondary w-100">
+                Filtrer / Rechercher
+            </button>
+        </div>
+    </div>
+</form>
+
+<!-- Bouton d'export Excel (ajouté pour le téléchargement) -->
+<div class="mb-3">
+    <button id="exportExcelBtn" class="btn btn-success">
+        Exporter en Excel
+    </button>
+</div>
+
+<!-- Formulaire POST : Import Excel -->
+<form method="POST" action="{% url 'pointofsale-import' %}" enctype="multipart/form-data" class="mb-4">
+    {% csrf_token %}
+    <div class="input-group">
+        <input type="file" name="excel_file" class="form-control" accept=".xlsx,.xls">
+        <button class="btn btn-primary" type="submit">Importer</button>
+    </div>
+</form>
+
+<!-- Tableau listant les points de vente -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between">
+        <span>Points de Vente</span>
+        <!-- Lien d'ajout, si besoin -->
+        <a href="{% url 'pointofsale-create' %}" class="btn btn-primary btn-sm">
+            Ajouter un point de vente
+        </a>
+    </div>
+
+    <div class="card-body">
+        <table class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th scope="col">Code</th>
+                    <th scope="col">Type</th>
+                    <th scope="col">Latitude</th>
+                    <th scope="col">Longitude</th>
+                    <th scope="col">Commune</th>
+                    <th scope="col">Actions</th>
+                </tr>
+            </thead>
+            <!-- Important : Ajout de l'id="posTableBody" pour le mode AJAX -->
+            <tbody id="posTableBody">
+                {% for p in page_obj %}
+                <tr>
+                    <td>{{ p.code }}</td>
+                    <td>{{ p.type }}</td>
+                    <td>{{ p.gps_lat }}</td>
+                    <td>{{ p.gps_lon }}</td>
+                    <td>{{ p.commune.name }}</td>
+                    <td>
+                        <a href="{% url 'pointofsale-detail' p.id %}" class="btn btn-info btn-sm">
+                            Voir
+                        </a>
+                        <a href="{% url 'pointofsale-update' p.id %}" class="btn btn-primary btn-sm">
+                            Modifier
+                        </a>
+                        <form action="{% url 'pointofsale-delete' p.id %}" method="POST" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-sm"
+                                    onclick="return confirm('Êtes-vous sûr ?')">
+                                Supprimer
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">Aucun résultat.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Pagination classique (non-AJAX) -->
+        {% if is_paginated %}
+        <nav id="staticPagination">
+            <ul class="pagination">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link"
+                       href="?page={{ page_obj.previous_page_number }}&commune={{ selected_commune }}&type={{ selected_type }}&search={{ search }}">
+                        Précédent
+                    </a>
+                </li>
+                {% endif %}
+                <li class="page-item disabled">
+                    <span class="page-link">
+                        Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+                    </span>
+                </li>
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link"
+                       href="?page={{ page_obj.next_page_number }}&commune={{ selected_commune }}&type={{ selected_type }}&search={{ search }}">
+                        Suivant
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+        <!-- Pagination dynamique (AJAX), masquée tant qu'on n'a pas activé le mode AJAX -->
+        <nav class="mt-3 d-none" id="ajaxPagination">
+            <ul class="pagination justify-content-center">
+                <li class="page-item">
+                    <button class="page-link" id="prevPageBtn">Précédent</button>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link" id="pageInfo">Page ? / ?</span>
+                </li>
+                <li class="page-item">
+                    <button class="page-link" id="nextPageBtn">Suivant</button>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<!-- JavaScript pour AJAX & Export Excel -->
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+    const communeSelect = document.getElementById("communeSelect");
+    const typeSelect = document.getElementById("typeSelect");
+    const searchInput = document.getElementById("searchInput");
+
+    const posTableBody = document.getElementById("posTableBody");
+
+    const ajaxPagination = document.getElementById("ajaxPagination");
+    const prevPageBtn = document.getElementById("prevPageBtn");
+    const nextPageBtn = document.getElementById("nextPageBtn");
+    const pageInfo = document.getElementById("pageInfo");
+
+    const exportExcelBtn = document.getElementById("exportExcelBtn");
+
+    let currentPage = 1;
+
+    // Active la pagination AJAX (masque la pagination statique)
+    function activateAjaxMode() {
+        // On masque toutes les pagination "classiques"
+        const staticPaginations = document.querySelectorAll(".pagination:not(#ajaxPagination)");
+        staticPaginations.forEach(el => el.classList.add("d-none"));
+
+        ajaxPagination.classList.remove("d-none");
+    }
+
+    // Récupère et affiche la page 'page' en AJAX
+    function fetchPointsOfSale(page=1) {
+        const commune = communeSelect.value;
+        const posType = typeSelect.value;
+        const search = searchInput.value.trim();
+
+        let url = "/pointofsale/?page=" + page;
+        if (commune) url += "&commune=" + encodeURIComponent(commune);
+        if (posType) url += "&type=" + encodeURIComponent(posType);
+        if (search) url += "&search=" + encodeURIComponent(search);
+
+        fetch(url, {
+            headers: { "X-Requested-With": "XMLHttpRequest" }
+        })
+        .then(response => response.json())
+        .then(data => {
+            activateAjaxMode();
+            posTableBody.innerHTML = "";
+
+            data.points_of_sale.forEach(item => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${item.code}</td>
+                    <td>${item.type}</td>
+                    <td>${item.gps_lat}</td>
+                    <td>${item.gps_lon}</td>
+                    <td>${item.commune}</td>
+                    <td><!-- dans cet exemple, on ne recrée pas le menu 'Actions' en mode AJAX --></td>
+                `;
+                posTableBody.appendChild(row);
+            });
+
+            currentPage = data.pagination.current_page;
+            pageInfo.textContent = `Page ${currentPage} / ${data.pagination.num_pages}`;
+            prevPageBtn.disabled = !data.pagination.has_previous;
+            nextPageBtn.disabled = !data.pagination.has_next;
+        })
+        .catch(err => console.error("Erreur AJAX:", err));
+    }
+
+    // Bouton Export Excel
+    exportExcelBtn.addEventListener("click", function(){
+        const commune = communeSelect.value;
+        const posType = typeSelect.value;
+        const search = searchInput.value.trim();
+
+        let url = "/pointofsale/?export=excel";
+        if (commune) url += "&commune=" + encodeURIComponent(commune);
+        if (posType) url += "&type=" + encodeURIComponent(posType);
+        if (search) url += "&search=" + encodeURIComponent(search);
+
+        // Déclenche le téléchargement
+        window.location.href = url;
+    });
+
+    // Listeners pour filtrage AJAX (optionnel, si on veut la recherche réactive)
+    communeSelect.addEventListener("change", () => {
+        currentPage = 1;
+        fetchPointsOfSale(currentPage);
+    });
+    typeSelect.addEventListener("change", () => {
+        currentPage = 1;
+        fetchPointsOfSale(currentPage);
+    });
+    searchInput.addEventListener("keyup", () => {
+        currentPage = 1;
+        fetchPointsOfSale(currentPage);
+    });
+
+    // Listeners pagination AJAX
+    prevPageBtn.addEventListener("click", () => {
+        if (!prevPageBtn.disabled && currentPage > 1) {
+            fetchPointsOfSale(currentPage - 1);
+        }
+    });
+    nextPageBtn.addEventListener("click", () => {
+        fetchPointsOfSale(currentPage + 1);
+    });
+});
+</script>
+{% endblock %}

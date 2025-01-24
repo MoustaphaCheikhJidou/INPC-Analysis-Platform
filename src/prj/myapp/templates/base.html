@@ -31,9 +31,12 @@
                             <i class="fas fa-cog"></i> Configurations
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="navbarConfigurations">
-                            <li><a class="dropdown-item" href="{% url 'wilaya-list' %}"><i class="fas fa-map-marker-alt"></i> Wilayas</a></li>
-                            <li><a class="dropdown-item" href="{% url 'moughataa-list' %}"><i class="fas fa-map"></i> Moughataas</a></li>
-                            <li><a class="dropdown-item" href="{% url 'commune-list' %}"><i class="fas fa-building"></i> Communes</a></li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'commune-list' %}">
+                                    <i class="fas fa-file-import"></i> Wilayas, Moughataa et Commune
+                                </a>
+                            </li>
+                            
                         </ul>
                     </li>
                     <li class="nav-item dropdown">
@@ -74,6 +77,7 @@
 
     <!-- Contenu principal -->
     <main class="container mt-4">
+        
         {% block content %}
         {% endblock %}
     </main>

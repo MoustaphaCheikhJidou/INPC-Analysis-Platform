@@ -4,3 +4,6 @@ openpyxl
 tablib
 django-import-export
 geopy
+django-crispy-forms
+crispy-bootstrap4
+Pillow

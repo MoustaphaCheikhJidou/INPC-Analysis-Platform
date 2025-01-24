@@ -1,0 +1,65 @@
+<!-- templates/ansade_app/inpc.html -->
+
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="text-center">Calcul de l'INPC</h2>
+    
+    <!-- Formulaire de sélection de l'année et du mois -->
+    <form method="get" class="mb-4">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label for="annee" class="form-label">Année :</label>
+                <select name="annee" id="annee" class="form-select">
+                    {% for annee in annees_disponibles %}
+                        <option value="{{ annee }}" {% if annee == annee_courante %}selected{% endif %}>{{ annee }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="mois" class="form-label">Mois :</label>
+                <select name="mois" id="mois" class="form-select">
+                    {% for m in mois_disponibles %}
+                        <option value="{{ m }}" {% if m == mois_courant %}selected{% endif %}>{{ calendar.month_name[m] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">Calculer</button>
+            </div>
+        </div>
+    </form>
+    
+    <!-- Affichage de l'INPC par groupe -->
+    {% if inpc_par_groupe %}
+        <h4 class="mt-4">INPC Global pour {{ mois_name }} {{ annee_courante }}</h4>
+        <table class="table table-bordered table-hover">
+            <thead class="table-secondary">
+                <tr>
+                    <th>Année</th>
+                    <th>Mois</th>
+                    <th>Groupe</th>
+                    <th>INPC (%)</th>
+                    <th>Produits Calculés</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for groupe in inpc_par_groupe %}
+                    <tr>
+                        <td>{{ groupe.Année }}</td>
+                        <td>{{ groupe.month_name }}</td>
+                        <td>{{ groupe.Groupe }}</td>
+                        <td>{{ groupe.INPC }}</td>
+                        <td>{{ groupe['Produits Calculés'] }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <h4 class="mt-4">INPC Global: {{ inpc_global }}</h4>
+    {% else %}
+        <p>Aucune donnée disponible pour {{ mois_courant }}/{{ annee_courante }}.</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,97 +1,231 @@
-{% extends 'base.html' %}
-
-{% block title %}Liste des points de vente{% endblock %}
+{% extends "base.html" %}
 {% load static %}
 
 {% block content %}
-    <!-- Include necessary styles and scripts -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.12.0/css/jquery.dataTables.min.css">
+<!-- Messages -->
+{% if messages %}
+  {% for msg in messages %}
+    <div class="alert alert-{{ msg.tags }}">{{ msg }}</div>
+  {% endfor %}
+{% endif %}
 
-    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.datatables.net/1.12.0/js/jquery.dataTables.min.js"></script>
-
-    <script>
-        $(document).ready(function () {
-            $('#bootstrapdatatable').DataTable({
-                "paging": true,
-                "searching": true,
-                "lengthMenu": [[3, 5, 10, 25, -1], [3, 5, 10, 25, "Tout"]],
-                "pageLength": 3,
-                "language": {
-                    "url": "//cdn.datatables.net/plug-ins/1.12.0/i18n/French.json"
-                }
-            });
-        });
-    </script>
-
-    <div class="container mt-4">
-        <!-- Statistics Section -->
-        <div class="row mb-4">
-            <div class="col-lg-4 col-md-6">
-                <div class="card p-3 text-center shadow-sm">
-                    <h5 class="card-title">Nombre de Communes</h5>
-                    <p class="card-text">{{ count_communes }}</p>
-                </div>
-            </div>
-            <div class="col-lg-4 col-md-6">
-                <div class="card p-3 text-center shadow-sm">
-                    <h5 class="card-title">Nombre de Catégories</h5>
-                    <p class="card-text">{{ count_categories }}</p>
-                </div>
-            </div>
-            <div class="col-lg-4 col-md-6">
-                <div class="card p-3 text-center shadow-sm">
-                    <h5 class="card-title">Nombre de Points de Vente</h5>
-                    <p class="card-text">{{ count_total_pointvente }}</p>
-                </div>
-            </div>
+<!-- Formulaire GET : Filtrage et Recherche -->
+<form method="GET" action="" class="mb-4">
+    <div class="row g-3">
+        <!-- Commune -->
+        <div class="col-md-3">
+            <label for="communeSelect" class="form-label">Commune :</label>
+            <select id="communeSelect" name="commune" class="form-select">
+                <option value="">-- Toutes --</option>
+                {% for c in communes %}
+                    <option value="{{ c.id }}"
+                        {% if c.id|stringformat:"s" == selected_commune %}selected{% endif %}>
+                        {{ c.name }}
+                    </option>
+                {% endfor %}
+            </select>
         </div>
 
-        <!-- Table Section -->
-        <div class="row mb-3">
-            <div class="col-md-12 text-end">
-                <a href="{% url 'pointofsale-create' %}" class="btn btn-primary">Ajouter un point de vente</a>
-            </div>
+        <!-- Type -->
+        <div class="col-md-3">
+            <label for="typeSelect" class="form-label">Type :</label>
+            <select id="typeSelect" name="type" class="form-select">
+                <option value="">-- Tous --</option>
+                {% for t in available_types %}
+                    <option value="{{ t }}"
+                        {% if t == selected_type %}selected{% endif %}>
+                        {{ t }}
+                    </option>
+                {% endfor %}
+            </select>
         </div>
 
-        <div class="table-responsive">
-            {% if point_of_sales %}
-                <table id="bootstrapdatatable" class="table table-striped table-bordered">
-                    <thead>
-                        <tr>
-                            <th scope="col">Code</th>
-                            <th scope="col">Type</th>
-                            <th scope="col">Latitude</th>
-                            <th scope="col">Longitude</th>
-                            <th scope="col">Commune</th>
-                            <th scope="col">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for p in point_of_sales %}
-                            <tr>
-                                <td>{{ p.code }}</td>
-                                <td>{{ p.type }}</td>
-                                <td>{{ p.gps_lat }}</td>
-                                <td>{{ p.gps_lon }}</td>
-                                <td>{{ p.commune.name }}</td> <!-- Adjust based on Commune field -->
-                                <td>
-                                    <a href="{% url 'pointofsale-detail' p.id %}" class="btn btn-info btn-sm">Voir</a>
-                                    <a href="{% url 'pointofsale-update' p.id %}" class="btn btn-primary btn-sm">Modifier</a>
-                                    <form action="{% url 'pointofsale-delete' p.id %}" method="POST" class="d-inline">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce point de vente ?')">Supprimer</button>
-                                    </form>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            {% else %}
-                <p class="text-center">Aucun point de vente n'est disponible dans la base de données.</p>
-            {% endif %}
+        <!-- Recherche -->
+        <div class="col-md-3">
+            <label for="searchInput" class="form-label">Recherche :</label>
+            <input type="text" id="searchInput" name="search" class="form-control"
+                   value="{{ search }}" placeholder="Code ou Type...">
+        </div>
+
+        <div class="col-md-3 d-flex align-items-end">
+            <button type="submit" class="btn btn-secondary w-100">
+                Filtrer / Rechercher
+            </button>
         </div>
     </div>
+</form>
+
+<!-- Formulaire POST : Import Excel -->
+<form method="POST" action="" enctype="multipart/form-data" class="mb-4">
+    {% csrf_token %}
+    <div class="input-group">
+        <input type="file" name="excel_file" class="form-control" accept=".xlsx,.xls">
+        <button class="btn btn-primary" type="submit">Importer</button>
+    </div>
+</form>
+
+<!-- Tableau listant les points de vente -->
+<div class="card">
+    <div class="card-header">Points de Vente</div>
+    <div class="card-body">
+        <table class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Type</th>
+                    <th>GPS Lat</th>
+                    <th>GPS Lon</th>
+                    <th>Commune</th>
+                </tr>
+            </thead>
+            <tbody id="posTableBody">
+                <!-- Affichage initial (non-AJAX) -->
+                {% for pos in points_of_sale %}
+                <tr>
+                    <td>{{ pos.code }}</td>
+                    <td>{{ pos.type }}</td>
+                    <td>{{ pos.gps_lat }}</td>
+                    <td>{{ pos.gps_lon }}</td>
+                    <td>{{ pos.commune.name }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5">Aucun résultat.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Pagination (non-AJAX) -->
+        {% if is_paginated %}
+        <nav>
+            <ul class="pagination">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&commune={{ selected_commune }}&type={{ selected_type }}&search={{ search }}">
+                        Précédent
+                    </a>
+                </li>
+                {% endif %}
+                <li class="page-item disabled">
+                    <span class="page-link">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+                </li>
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&commune={{ selected_commune }}&type={{ selected_type }}&search={{ search }}">
+                        Suivant
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+        <!-- Pagination dynamique (AJAX) masquée au départ -->
+        <nav class="mt-3 d-none" id="ajaxPagination">
+            <ul class="pagination justify-content-center">
+                <li class="page-item">
+                    <button class="page-link" id="prevPageBtn">Précédent</button>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link" id="pageInfo">Page ? / ?</span>
+                </li>
+                <li class="page-item">
+                    <button class="page-link" id="nextPageBtn">Suivant</button>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<!-- JavaScript pour AJAX -->
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+    const communeSelect = document.getElementById("communeSelect");
+    const typeSelect = document.getElementById("typeSelect");
+    const searchInput = document.getElementById("searchInput");
+    const posTableBody = document.getElementById("posTableBody");
+
+    const ajaxPagination = document.getElementById("ajaxPagination");
+    const prevPageBtn = document.getElementById("prevPageBtn");
+    const nextPageBtn = document.getElementById("nextPageBtn");
+    const pageInfo = document.getElementById("pageInfo");
+
+    let currentPage = 1;
+
+    function activateAjaxMode() {
+        // Masquer la pagination statique si besoin
+        const staticPaginations = document.querySelectorAll(".pagination:not(#ajaxPagination)");
+        staticPaginations.forEach(el => el.classList.add("d-none"));
+
+        ajaxPagination.classList.remove("d-none");
+    }
+
+    // Requête AJAX
+    function fetchPointsOfSale(page=1) {
+        const commune = communeSelect.value;
+        const posType = typeSelect.value;
+        const search = searchInput.value.trim();
+
+        let url = `/points-of-sale/?page=${page}`;
+        if (commune) url += `&commune=${encodeURIComponent(commune)}`;
+        if (posType) url += `&type=${encodeURIComponent(posType)}`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+
+        // Ajout du header X-Requested-With
+        fetch(url, {
+            headers: { "X-Requested-With": "XMLHttpRequest" }
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Activer le mode AJAX
+            activateAjaxMode();
+
+            // Mise à jour du tableau
+            posTableBody.innerHTML = "";
+            data.points_of_sale.forEach(item => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${item.code}</td>
+                    <td>${item.type}</td>
+                    <td>${item.gps_lat}</td>
+                    <td>${item.gps_lon}</td>
+                    <td>${item.commune}</td>
+                `;
+                posTableBody.appendChild(row);
+            });
+
+            // Pagination dynamique
+            currentPage = data.pagination.current_page;
+            pageInfo.textContent = `Page ${currentPage} / ${data.pagination.num_pages}`;
+            prevPageBtn.disabled = !data.pagination.has_previous;
+            nextPageBtn.disabled = !data.pagination.has_next;
+        })
+        .catch(err => console.error("Erreur AJAX :", err));
+    }
+
+    // Ecouteurs
+    communeSelect.addEventListener("change", () => {
+        currentPage = 1;
+        fetchPointsOfSale(currentPage);
+    });
+    typeSelect.addEventListener("change", () => {
+        currentPage = 1;
+        fetchPointsOfSale(currentPage);
+    });
+    searchInput.addEventListener("keyup", () => {
+        currentPage = 1;
+        fetchPointsOfSale(currentPage);
+    });
+
+    // Pagination AJAX
+    prevPageBtn.addEventListener("click", () => {
+        if (!prevPageBtn.disabled && currentPage > 1) {
+            fetchPointsOfSale(currentPage - 1);
+        }
+    });
+    nextPageBtn.addEventListener("click", () => {
+        fetchPointsOfSale(currentPage + 1);
+    });
+});
+</script>
+
 {% endblock %}

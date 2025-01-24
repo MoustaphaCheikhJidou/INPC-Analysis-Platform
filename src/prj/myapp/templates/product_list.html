@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}Liste des Produits{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <!-- Messages -->
+    {% if messages %}
+      {% for msg in messages %}
+        <div class="alert alert-{{ msg.tags }}">{{ msg }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <h1 class="mb-4 text-center">Liste des Produits</h1>
+
+    <!-- Formulaire GET : filtrage + recherche -->
+    <form method="GET" class="mb-4">
+        <div class="row g-3">
+            <!-- Filtre par product_type -->
+            <div class="col-md-3">
+                <label for="productTypeSelect" class="form-label">Type de Produit :</label>
+                <select id="productTypeSelect" name="product_type" class="form-select">
+                    <option value="">-- Tous --</option>
+                    {% for pt in product_types %}
+                        <option value="{{ pt }}"
+                                {% if pt == selected_type %} selected {% endif %}>
+                            {{ pt }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Recherche (code, name, product_type) -->
+            <div class="col-md-3">
+                <label for="searchInput" class="form-label">Recherche :</label>
+                <input type="text" id="searchInput" name="search"
+                       class="form-control" value="{{ search }}"
+                       placeholder="Code, Nom, Type...">
+            </div>
+
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-secondary w-100">
+                    Filtrer / Rechercher
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Bouton d'export Excel -->
+    <div class="mb-3">
+        <button id="exportExcelBtn" class="btn btn-success">
+            Exporter en Excel
+        </button>
+    </div>
+
+    <!-- Formulaire d'import Excel -->
+    <form method="POST" action="{% url 'product-import' %}" enctype="multipart/form-data" class="mb-4">
+        {% csrf_token %}
+        <div class="input-group">
+            <input type="file" name="excel_file" class="form-control" accept=".xlsx,.xls">
+            <button class="btn btn-primary" type="submit">Importer</button>
+        </div>
+    </form>
+
+    <div class="card-header d-flex justify-content-between">
+        <span>Produit</span>
+        <!-- Lien d'ajout, si besoin -->
+        <a href="{% url 'product-create' %}" class="btn btn-primary btn-sm">
+            Ajouter un Produit
+        </a>
+    </div>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Code</th>
+                <th>Nom</th>
+                <th>Description</th>
+                <th>Unité de Mesure</th>
+                <th>Type de Produit</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="productTableBody">
+            {% for product in page_obj %}
+                <tr>
+                    <td>{{ product.code }}</td>
+                    <td>{{ product.name }}</td>
+                    <td>{{ product.description }}</td>
+                    <td>{{ product.unit_measure }}</td>
+                    <td>{{ product.product_type }}</td>
+                    <td>
+                        <a href="{% url 'product-detail' product.id %}" class="btn btn-info btn-sm">Voir</a>
+                        <a href="{% url 'product-update' product.id %}" class="btn btn-warning btn-sm">Modifier</a>
+                        <form action="{% url 'product-delete' product.id %}" method="post" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-sm"
+                                    onclick="return confirm('Voulez-vous vraiment supprimer ce produit ?');">
+                                Supprimer
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            {% empty %}
+            <tr><td colspan="6">Aucun produit trouvé.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Pagination statique -->
+    {% if page_obj.has_other_pages %}
+    <nav id="staticPagination">
+        <ul class="pagination">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link"
+                   href="?page={{ page_obj.previous_page_number }}&product_type={{ selected_type }}&search={{ search }}">
+                    Précédent
+                </a>
+            </li>
+            {% endif %}
+            <li class="page-item disabled">
+                <span class="page-link">
+                    Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+                </span>
+            </li>
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link"
+                   href="?page={{ page_obj.next_page_number }}&product_type={{ selected_type }}&search={{ search }}">
+                    Suivant
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    <!-- Pagination AJAX -->
+    <nav class="mt-3 d-none" id="ajaxPagination">
+        <ul class="pagination justify-content-center">
+            <li class="page-item">
+                <button class="page-link" id="prevPageBtn">Précédent</button>
+            </li>
+            <li class="page-item disabled">
+                <span class="page-link" id="pageInfo">Page ? / ?</span>
+            </li>
+            <li class="page-item">
+                <button class="page-link" id="nextPageBtn">Suivant</button>
+            </li>
+        </ul>
+    </nav>
+</div>
+
+<!-- Script pour recherche/pagination AJAX, et export Excel -->
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+    const productTypeSelect = document.getElementById("productTypeSelect");
+    const searchInput = document.getElementById("searchInput");
+    const productTableBody = document.getElementById("productTableBody");
+
+    const staticPagination = document.getElementById("staticPagination");
+    const ajaxPagination = document.getElementById("ajaxPagination");
+    const prevPageBtn = document.getElementById("prevPageBtn");
+    const nextPageBtn = document.getElementById("nextPageBtn");
+    const pageInfo = document.getElementById("pageInfo");
+    const exportExcelBtn = document.getElementById("exportExcelBtn");
+
+    let currentPage = 1;
+
+    function activateAjaxMode() {
+        if (staticPagination) {
+            staticPagination.classList.add("d-none");
+        }
+        ajaxPagination.classList.remove("d-none");
+    }
+
+    function fetchProducts(page=1) {
+        const prodType = productTypeSelect.value;
+        const search = searchInput.value.trim();
+        let url = "/product/?page=" + page;
+        if (prodType) url += "&product_type=" + encodeURIComponent(prodType);
+        if (search) url += "&search=" + encodeURIComponent(search);
+
+        fetch(url, {
+            headers: { "X-Requested-With": "XMLHttpRequest" }
+        })
+        .then(response => response.json())
+        .then(data => {
+            activateAjaxMode();
+            productTableBody.innerHTML = "";
+
+            data.products.forEach(prod => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${prod.code}</td>
+                    <td>${prod.name}</td>
+                    <td>${prod.description}</td>
+                    <td>${prod.unit_measure}</td>
+                    <td>${prod.product_type}</td>
+                    <td>
+                        <!-- En mode AJAX, vous pourriez recréer ici les boutons "Voir / Modifier / Supprimer" si nécessaire -->
+                    </td>
+                `;
+                productTableBody.appendChild(row);
+            });
+
+            currentPage = data.pagination.current_page;
+            pageInfo.textContent = `Page ${currentPage} / ${data.pagination.num_pages}`;
+            prevPageBtn.disabled = !data.pagination.has_previous;
+            nextPageBtn.disabled = !data.pagination.has_next;
+        })
+        .catch(err => console.error("Erreur AJAX :", err));
+    }
+
+    // Ecouteurs pour filtrage AJAX
+    productTypeSelect.addEventListener("change", () => {
+        currentPage = 1;
+        fetchProducts(currentPage);
+    });
+    searchInput.addEventListener("keyup", () => {
+        currentPage = 1;
+        fetchProducts(currentPage);
+    });
+
+    // Boutons pagination AJAX
+    prevPageBtn.addEventListener("click", () => {
+        if (currentPage > 1) {
+            fetchProducts(currentPage - 1);
+        }
+    });
+    nextPageBtn.addEventListener("click", () => {
+        fetchProducts(currentPage + 1);
+    });
+
+    // Export Excel
+    exportExcelBtn.addEventListener("click", function(){
+        const prodType = productTypeSelect.value;
+        const search = searchInput.value.trim();
+
+        let url = "/product/?export=excel";
+        if (prodType) url += "&product_type=" + encodeURIComponent(prodType);
+        if (search) url += "&search=" + encodeURIComponent(search);
+
+        window.location.href = url; // Déclenche le téléchargement
+    });
+});
+</script>
+{% endblock %}

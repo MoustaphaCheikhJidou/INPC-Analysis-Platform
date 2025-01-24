@@ -1,19 +1,29 @@
-<!-- templates/myapp/home.html -->
-{% extends 'base.html' %}
+<!-- templates/home.html -->
+
+{% extends "base.html" %}
 
 {% block content %}
 <div class="container mt-4">
-    <h1>Bienvenue sur l'application de gestion de l'INPC</h1>
-    <p>Veuillez sélectionner une entité à gérer :</p>
-
-    <div class="list-group">
-        <a href="{% url 'wilaya-list' %}" class="list-group-item list-group-item-action">Gérer les Wilayas</a>
-        <a href="{% url 'moughataa-list' %}" class="list-group-item list-group-item-action">Gérer les Moughataas</a>
-        <a href="{% url 'commune-list' %}" class="list-group-item list-group-item-action">Gérer les Communes</a>
-        <a href="{% url 'product-list' %}" class="list-group-item list-group-item-action">Gérer les Produits</a>
-        <a href="{% url 'partproduct-list' %}" class="list-group-item list-group-item-action">Gérer les Paniers de Produits</a>
-        <a href="{% url 'pointofsale-list' %}" class="list-group-item list-group-item-action">Gérer les Points de Vente</a>
-        <a href="{% url 'productprice-list' %}" class="list-group-item list-group-item-action">Gérer les Prix des Produits</a>
+    <h1 class="text-center">INPC - Derniers 6 Mois</h1>
+    <div class="row mt-5">
+        <table class="table table-bordered table-hover">
+            <thead class="table-primary">
+                <tr>
+                    <th>Mois</th>
+                    <th>Année</th>
+                    <th>INPC (%)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for data in inpc_data %}
+                    <tr>
+                        <td>{{ data.month_name }}</td> <!-- Affiche le nom complet du mois -->
+                        <td>{{ data.year }}</td>
+                        <td>{{ data.inpc }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 {% endblock %}

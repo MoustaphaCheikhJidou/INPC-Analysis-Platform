@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+
+<br>
+<br>
+<div class="mb-4">
+    <div class="row g-3">
+        <!-- Sélection Wilaya -->
+        <div class="col-md-3">
+            <label for="wilayaSelect" class="form-label">Wilaya :</label>
+            <select id="wilayaSelect" class="form-select">
+                <option value="">-- Toutes --</option>
+                {% for w in wilayas %}
+                    <option value="{{ w.code }}"
+                        {% if w.code == selected_wilaya %}selected{% endif %}>
+                        {{ w.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Sélection Moughataa -->
+        <div class="col-md-3">
+            <label for="moughataaSelect" class="form-label">Moughataa :</label>
+            <select id="moughataaSelect" class="form-select">
+                <option value="">-- Toutes --</option>
+                {% for m in moughataas %}
+                    <option value="{{ m.code }}"
+                        {% if m.code == selected_moughataa %}selected{% endif %}>
+                        {{ m.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Barre de recherche -->
+        <div class="col-md-3">
+            <label for="searchInput" class="form-label">Recherche :</label>
+            <input type="text" id="searchInput" class="form-control"
+                   placeholder="Nom ou code de la Commune..."
+                   value="{{ search|default:'' }}">
+        </div>
+    </div>
+</div>
+
+<!-- Formulaire d’import Excel (POST) -->
+<form method="POST" action="{% url 'import_data' %}" enctype="multipart/form-data" class="mb-4">
+    {% csrf_token %}
+    <div class="input-group">
+        <input type="file" name="excel_file" class="form-control" accept=".xlsx,.xls">
+        <button class="btn btn-primary" type="submit">
+            Importer
+        </button>
+    </div>
+</form>
+
+<!-- Tableau : Liste des Communes (vue initiale statique + rafraîchissement JS) -->
+<div class="card">
+    <div class="card-header">
+        Liste des Communes
+        <button id="exportExcelBtn" class="btn btn-success mb-3">
+            Exporter en Excel
+        </button>        
+    </div>
+    <div class="card-body">
+        <!-- Tableau principal -->
+        <table class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Code</th>
+                    <th>Nom</th>
+                    <th>Moughataa</th>
+                    <th>Wilaya</th>
+                </tr>
+            </thead>
+            <tbody id="communeTableBody">
+                <!-- Affichage initial en mode non-AJAX -->
+                {% for commune in page_obj %}
+                <tr>
+                    <td>{{ commune.id }}</td>
+                    <td>{{ commune.code }}</td>
+                    <td>{{ commune.name }}</td>
+                    <td>{{ commune.moughataa.name }}</td>
+                    <td>{{ commune.moughataa.wilaya.name }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Pagination : vue initiale (non-AJAX) -->
+        <nav aria-label="Pagination Communes" class="mt-3" id="staticPagination">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link"
+                       href="?page={{ page_obj.previous_page_number }}&wilaya={{ selected_wilaya }}&moughataa={{ selected_moughataa }}&search={{ search }}">
+                        Précédent
+                    </a>
+                </li>
+                {% endif %}
+                
+                <li class="page-item disabled">
+                    <span class="page-link">
+                        Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+                    </span>
+                </li>
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link"
+                       href="?page={{ page_obj.next_page_number }}&wilaya={{ selected_wilaya }}&moughataa={{ selected_moughataa }}&search={{ search }}">
+                        Suivant
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+
+        <!-- Pagination dynamique (pour AJAX), masquée si on n'utilise pas JavaScript -->
+        <nav aria-label="Pagination Communes" class="mt-3 d-none" id="ajaxPagination">
+            <ul class="pagination justify-content-center">
+                <li class="page-item">
+                    <button id="prevPageBtn" class="page-link">Précédent</button>
+                </li>
+                <li class="page-item disabled">
+                    <span id="pageInfo" class="page-link">Page ? / ?</span>
+                </li>
+                <li class="page-item">
+                    <button id="nextPageBtn" class="page-link">Suivant</button>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<!-- JavaScript pour gérer la recherche/filtrage/pagination en AJAX -->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const wilayaSelect = document.getElementById("wilayaSelect");
+        const moughataaSelect = document.getElementById("moughataaSelect");
+        const searchInput = document.getElementById("searchInput");
+        const communeTableBody = document.getElementById("communeTableBody");
+    
+        const staticPagination = document.getElementById("staticPagination");
+        const ajaxPagination = document.getElementById("ajaxPagination");
+        const pageInfo = document.getElementById("pageInfo");
+        const prevPageBtn = document.getElementById("prevPageBtn");
+        const nextPageBtn = document.getElementById("nextPageBtn");
+    
+        /* 
+           BOUTON D'EXPORT 
+           (assurez-vous qu'il existe dans commune.html
+           avec l'id="exportExcelBtn")
+        */
+        const exportExcelBtn = document.getElementById("exportExcelBtn");
+    
+        let currentPage = 1;
+    
+        // Bascule en mode AJAX
+        function activateAjaxMode() {
+            if (staticPagination) {
+                staticPagination.classList.add("d-none");
+            }
+            if (ajaxPagination) {
+                ajaxPagination.classList.remove("d-none");
+            }
+        }
+    
+        // Appel AJAX pour récupérer les communes filtrées/paginées
+        function fetchCommunes(page=1) {
+            const wilaya = wilayaSelect.value;
+            const moughataa = moughataaSelect.value;
+            const search = searchInput.value.trim();
+    
+            let url = `/communes/?page=${page}`;
+            if (wilaya) url += `&wilaya=${encodeURIComponent(wilaya)}`;
+            if (moughataa) url += `&moughataa=${encodeURIComponent(moughataa)}`;
+            if (search) url += `&search=${encodeURIComponent(search)}`;
+    
+            fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                activateAjaxMode();
+                communeTableBody.innerHTML = "";
+    
+                data.communes.forEach(commune => {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                        <td>${commune.id}</td>
+                        <td>${commune.code}</td>
+                        <td>${commune.name}</td>
+                        <td>${commune.moughataa}</td>
+                        <td>${commune.wilaya}</td>
+                    `;
+                    communeTableBody.appendChild(row);
+                });
+    
+                currentPage = data.pagination.current_page;
+                pageInfo.textContent = `Page ${currentPage} / ${data.pagination.num_pages}`;
+                prevPageBtn.disabled = !data.pagination.has_previous;
+                nextPageBtn.disabled = !data.pagination.has_next;
+            })
+            .catch(err => console.error("Erreur AJAX:", err));
+        }
+    
+        // Filtrage
+        wilayaSelect.addEventListener("change", () => {
+            currentPage = 1;
+            fetchCommunes(currentPage);
+        });
+        moughataaSelect.addEventListener("change", () => {
+            currentPage = 1;
+            fetchCommunes(currentPage);
+        });
+        searchInput.addEventListener("keyup", () => {
+            currentPage = 1;
+            fetchCommunes(currentPage);
+        });
+    
+        // Pagination dynamique
+        prevPageBtn.addEventListener("click", () => {
+            if (!prevPageBtn.disabled && currentPage > 1) {
+                fetchCommunes(currentPage - 1);
+            }
+        });
+        nextPageBtn.addEventListener("click", () => {
+            fetchCommunes(currentPage + 1);
+        });
+    
+        /* Export Excel */
+        exportExcelBtn.addEventListener("click", () => {
+            const wilaya = wilayaSelect.value;
+            const moughataa = moughataaSelect.value;
+            const search = searchInput.value.trim();
+    
+            let url = `/communes/?export=excel`;
+            if (wilaya) url += `&wilaya=${encodeURIComponent(wilaya)}`;
+            if (moughataa) url += `&moughataa=${encodeURIComponent(moughataa)}`;
+            if (search) url += `&search=${encodeURIComponent(search)}`;
+    
+            // Déclenche le téléchargement en ouvrant cette URL
+            window.location.href = url;
+        });
+    });
+    </script>
+    
+{% endblock %}
