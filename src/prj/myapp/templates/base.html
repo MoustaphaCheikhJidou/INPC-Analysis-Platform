@@ -5,91 +5,374 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestion de l'INPC - ANSADE</title>
-    <!-- Favicon -->
-    <link rel="icon" href="{% static 'favicon.ico' %}" type="image/x-icon">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-Fo3rlrZj/kTcQ1Z6bZkS9NQ5gBVhtN5mSazbLXtV8ZXzMEZsI/OcP6d0zH7uMTHP+IbR8TXmBoH9lXr/6zV6uA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{% static 'styles.css' %}">
-    <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link rel="icon" href="{% static 'ansade1.png' %}" type="image/x-icon">
+    
+   <style>
+    /* Reset body/html */
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    /* Base sidebar styling */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 50;
+      width: 16rem;              /* Normal width (e.g., Tailwind w-64) */
+      min-height: 100vh;         /* Full viewport height */
+      background-color: #0284c7; /* sky-600-like color */
+      padding: 1.5rem;           /* Similar to p-6 in Tailwind */
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+      overflow-x: hidden;        /* Hide horizontal scroll */
+      overflow-y: auto;          /* Allow vertical scroll if content is long */
+      transition: all 0.3s ease; /* Smooth transitions on width/height changes */
+    }
+
+    /* (1) Narrow (Collapsed) Sidebar */
+    .sidebar-narrow {
+      width: 80px !important;
+      overflow: hidden !important;
+    }
+    .sidebar-narrow .nav-text {
+      display: none !important;  /* Hide text labels when collapsed */
+    }
+
+    /* (2) Expanded Sidebar (for big dropdowns) */
+    .sidebar-expanded {
+      width: 20rem !important;       /* Extra horizontal space for items */
+      min-height: 100vh !important;
+      overflow-y: auto !important;   /* Scroll if content exceeds window height */
+    }
+
+    /* If 'expanded' overrides 'narrow', define both */
+    .sidebar-narrow.sidebar-expanded {
+      width: 20rem !important;
+    }
+
+    /* Logo toggles */
+    .full-logo { /* Shown in normal mode */ }
+    .mini-logo {
+      display: none; /* Hidden by default */
+    }
+    .sidebar-narrow .full-logo {
+      display: none !important;
+    }
+    .sidebar-narrow .mini-logo {
+      display: block !important;
+    }
+
+    /* Avatar sizing */
+    .fixed-avatar {
+      width: 96px;
+      height: 96px;
+      object-fit: cover;
+      object-position: center;
+      flex-shrink: 0;
+    }
+    .sidebar-narrow .fixed-avatar {
+      width: 40px !important;
+      height: 40px !important;
+    }
+
+    /* Dropdown container */
+    .dropdown {
+      position: relative;
+      width: 100%;
+    }
+    .dropdown.active .dropdown-content {
+      display: block !important;
+    }
+
+    /* Dropdown content */
+    .dropdown-content {
+      display: none !important;  
+      margin-left: 0 !important;
+      width: 100% !important;
+      background-color: rgba(14,165,233,0.15) !important;
+      border-radius: 0.5rem !important;
+      box-sizing: border-box !important;
+      max-height: none !important;
+      /* To absolutely position inside parent, uncomment:
+         position: absolute !important;
+         left: 0;
+         top: 100%;
+         z-index: 999;
+       */
+    }
+
+    /* Navigation items */
+    .nav-item {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      padding: 0.75rem 1rem;    /* ~Tailwind py-3 px-4 */
+      box-sizing: border-box;
+      text-decoration: none;
+      color: #fff;
+      transition: background-color 0.2s ease;
+    }
+    .sidebar-narrow .nav-item {
+      justify-content: center !important; /* Center icons in collapsed mode */
+    }
+
+    /* Dropdown sub-items */
+    .dropdown-content .nav-item {
+      margin: 0.25rem 0;
+      padding-left: 1rem;
+    }
+
+    /* Text wrapping */
+    .nav-text {
+      white-space: normal;
+      word-wrap: break-word;
+    }
+
+    /* Icon styling */
+    .nav-item i {
+      width: 24px;
+      margin-right: 0.75rem;
+      text-align: center;
+    }
+    .sidebar-narrow .nav-item i {
+      margin-right: 0 !important;
+    }
+
+    /* Active link highlight */
+    .active-link {
+      background-color: #0369a1 !important; /* Darker highlight color */
+      color: #fff !important;
+      font-weight: 600 !important; 
+    }
+   .full-logo, .mini-logo {
+    transition: all 0.3s ease; /* Smooth transition between narrow and normal */
+}
+
+/* Hide the full logo in narrow mode */
+.sidebar-narrow .full-logo {
+    display: none !important;
+}
+
+/* Show the mini logo in narrow mode */
+.sidebar-narrow .mini-logo {
+    display: flex !important; /* Use flexbox for centering */
+    justify-content: center;  /* Center horizontally */
+    align-items: center;      /* Center vertically */
+    height: 80px;             /* Ensure enough height for the mini logo container */
+    width: 80px;              /* Ensure enough width for the mini logo container */
+    overflow: hidden;         /* Prevent overflow of the logo */
+}
+
+/* Mini logo image adjustments */
+.sidebar-narrow .mini-logo img {
+    height: 70%;          /* Scale the image to fit well in the sidebar */
+    width: 70%;           /* Maintain proportions */
+    object-fit: contain;  /* Ensure the logo is not distorted */
+    margin: 0;            /* No extra margin */
+}
+
+    </style>
 </head>
-<body>
-    <!-- Barre de navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="{% url 'home' %}">
-                <i class="fas fa-chart-line"></i> ANSADE - INPC
+<body class="bg-sky-50 antialiased">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div id="sidebar" class="bg-sky-600 w-64 p-6 flex flex-col transition-all duration-300">
+       <div class="flex items-center mb-8">
+    <div class="full-logo flex-grow">
+        <img src="{% static '1.png' %}" alt="ANSADE Full Logo" class="h-12 max-w-full">
+    </div>
+    <div class="mini-logo hidden flex-grow">
+        <img src="{% static 'ansade1.png' %}" alt="ANSADE Mini Logo" class="h-12 w-12">
+    </div>
+    <button id="sidebarToggle" class="text-white hover:text-sky-200 focus:outline-none ml-2">
+        <i class="fas fa-bars text-xl"></i>
+    </button>
+</div>
+
+
+            <!-- User Profile -->
+            <a href="{% url 'profile' %}">
+                <div class="text-center mb-8 flex flex-col items-center">
+                    <img src="{% if user.profile.image %}{{ user.profile.image.url }}{% else %}{% static 'images/profile/profile.png' %}{% endif %}" 
+                         class="fixed-avatar rounded-full border-4 border-white shadow-lg" alt="User Avatar">
+                    <h4 class="text-white text-xl font-semibold nav-text mt-2">
+                        {% if user.is_authenticated %}{{ user.username }}{% else %}Utilisateur{% endif %}
+                    </h4>
+                    <p class="text-sky-100 text-sm nav-text">
+                        {% if user.is_authenticated %}Administrateur{% else %}Rôle{% endif %}
+                    </p>
+                </div>
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarConfigurations" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-cog"></i> Configurations
+
+            <!-- Navigation -->
+            <nav class="space-y-2 flex-grow">
+                <!-- Home -->
+                <a href="{% url 'home' %}" class="nav-item text-white rounded-lg transition-all duration-200 hover:bg-sky-500 {% if request.resolver_match.url_name == 'home' %}active-link{% endif %}">
+                    <i class="fas fa-home"></i>
+                    <span class="nav-text">Accueil</span>
+                </a>
+
+                <!-- Configurations Dropdown -->
+                <div class="dropdown">
+                    <a href="#" class="nav-item text-white rounded-lg transition-all duration-200 hover:bg-sky-500 {% if 'commune-list' in request.resolver_match.url_name %}active-link{% endif %}" onclick="toggleDropdown(event)">
+                        <i class="fas fa-cog"></i>
+                        <span class="nav-text">Configurations</span>
+                        <i class="fas fa-chevron-down ml-auto"></i>
+                    </a>
+                    <div class="dropdown-content">
+                        <a href="{% url 'commune-list' %}" class="nav-item text-white rounded-lg transition-all duration-200 hover:bg-sky-500 {% if request.resolver_match.url_name == 'commune-list' %}active-link{% endif %}">
+                            <i class="fas fa-file-import"></i>
+                            <span class="nav-text">Wilayas, Moughataa et Commune</span>
                         </a>
-                        <ul class="dropdown-menu" aria-labelledby="navbarConfigurations">
-                            <li>
-                                <a class="dropdown-item" href="{% url 'commune-list' %}">
-                                    <i class="fas fa-file-import"></i> Wilayas, Moughataa et Commune
-                                </a>
-                            </li>
-                            
-                        </ul>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarProduits" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-box"></i> Produits
+                    </div>
+                </div>
+
+                <!-- Produits Dropdown -->
+                <div class="dropdown">
+                    <a href="#" class="nav-item text-white rounded-lg transition-all duration-200 hover:bg-sky-500 {% if 'product-list' in request.resolver_match.url_name or 'cartproducts-list' in request.resolver_match.url_name or 'cart-list' in request.resolver_match.url_name or 'producttype-list' in request.resolver_match.url_name %}active-link{% endif %}" onclick="toggleDropdown(event)">
+                        <i class="fas fa-box"></i>
+                        <span class="nav-text">Produits</span>
+                        <i class="fas fa-chevron-down ml-auto"></i>
+                    </a>
+                    <div class="dropdown-content">
+                        <a href="{% url 'producttype-list' %}" class="nav-item text-white rounded-lg transition-all duration-200 hover:bg-sky-500 {% if request.resolver_match.url_name == 'producttype-list' %}active-link{% endif %}">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span class="nav-text">Types Produits</span>
                         </a>
-                        <ul class="dropdown-menu" aria-labelledby="navbarProduits">
-                            <li><a class="dropdown-item" href="{% url 'product-list' %}"><i class="fas fa-list"></i> Liste des Produits</a></li>
-                            <li><a class="dropdown-item" href="{% url 'cartproducts-list' %}"><i class="fas fa-shopping-basket"></i> Produits dans Paniers</a></li>
-                            <li><a class="dropdown-item" href="{% url 'cart-list' %}"><i class="fas fa-shopping-cart"></i> Paniers</a></li>
-                        </ul>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'productprice-list' %}">
-                            <i class="fas fa-dollar-sign"></i> Prix
+                        <a href="{% url 'product-list' %}" class="nav-item text-white rounded-lg transition-all duration-200 hover:bg-sky-500 {% if request.resolver_match.url_name == 'product-list' %}active-link{% endif %}">
+                            <i class="fas fa-list"></i>
+                            <span class="nav-text">Liste des Produits</span>
                         </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'pointofsale-list' %}">
-                            <i class="fas fa-store"></i> Points de Vente
+                        <a href="{% url 'cartproducts-list' %}" class="nav-item text-white rounded-lg transition-all duration-200 hover:bg-sky-500 {% if request.resolver_match.url_name == 'cartproducts-list' %}active-link{% endif %}">
+                            <i class="fas fa-shopping-basket"></i>
+                            <span class="nav-text">Produits dans Paniers</span>
                         </a>
-                    </li>
-                </ul>    
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarUser" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-user"></i> Mon Compte
+                        <a href="{% url 'cart-list' %}" class="nav-item text-white rounded-lg transition-all duration-200 hover:bg-sky-500 {% if request.resolver_match.url_name == 'cart-list' %}active-link{% endif %}">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span class="nav-text">Paniers</span>
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarUser">
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-cog"></i> Paramètres</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-sign-out-alt"></i> Déconnexion</a></li>
-                        </ul>
-                    </li>
-                </ul>
+                    </div>
+                </div>
+
+                <!-- Prix -->
+                <a href="{% url 'productprice-list' %}" class="nav-item text-white rounded-lg transition-all duration-200 hover:bg-sky-500 {% if request.resolver_match.url_name == 'productprice-list' %}active-link{% endif %}">
+                    <i class="fas fa-dollar-sign"></i>
+                    <span class="nav-text">Prix</span>
+                </a>
+
+                <!-- Points de Vente -->
+                <a href="{% url 'pointofsale-list' %}" class="nav-item text-white rounded-lg transition-all duration-200 hover:bg-sky-500 {% if request.resolver_match.url_name == 'pointofsale-list' %}active-link{% endif %}">
+                    <i class="fas fa-store"></i>
+                    <span class="nav-text">Points de Vente</span>
+                </a>
+            </nav>
+
+            <!-- Logout -->
+            <div>
+                {% if user.is_authenticated %}
+                    <form action="{% url 'logout' %}" method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="nav-item w-full text-white rounded-lg transition-all duration-200 hover:bg-sky-500">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span class="nav-text">Déconnexion</span>
+                        </button>
+                    </form>
+                {% else %}
+                    <a href="{% url 'login' %}" class="nav-item text-white rounded-lg transition-all duration-200 hover:bg-sky-500">
+                        <i class="fas fa-sign-in-alt"></i>
+                        <span class="nav-text">Se connecter</span>
+                    </a>
+                {% endif %}
             </div>
         </div>
-    </nav>
 
-    <!-- Contenu principal -->
-    <main class="container mt-4">
-        
-        {% block content %}
-        {% endblock %}
-    </main>
+        <!-- Main Content -->
+        <div id="content" class="flex-1 p-8 overflow-auto">
+            <!-- Flash Messages -->
+            {% if messages %}
+                <div class="mb-6">
+                    {% for message in messages %}
+                        <div class="bg-{{ message.tags }}-100 border border-{{ message.tags }}-400 text-{{ message.tags }}-700 px-4 py-3 rounded relative" role="alert">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
 
-    <!-- Pied de page -->
-    <footer class="footer mt-auto py-3 bg-light">
-        <div class="container text-center">
-            <span class="text-muted">© 2024 ANSADE - Gestion de l'INPC. Tous droits réservés.</span>
+            <!-- Main Content Block -->
+            <div class="bg-white shadow-md rounded-lg p-6">
+                {% block content %}{% endblock %}
+            </div>
         </div>
-    </footer>
+    </div>
 
-    <!-- Bootstrap JS et dépendances -->
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // References
+        const sidebar = document.getElementById('sidebar');
+        const dropdowns = document.querySelectorAll('.dropdown');
+        const sidebarToggleBtn = document.getElementById('sidebarToggle');
+
+        // Toggle "narrow" sidebar on hamburger click
+        sidebarToggleBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('sidebar-narrow');
+
+            // If you do NOT want to allow "expanded" + "narrow" at the same time:
+            if (sidebar.classList.contains('sidebar-narrow')) {
+                sidebar.classList.remove('sidebar-expanded');
+            }
+        });
+
+        // Toggle dropdown
+        function toggleDropdown(event) {
+            event.preventDefault();
+            const dropdown = event.target.closest('.dropdown');
+            dropdown.classList.toggle('active');
+            
+            // Expand sidebar if not in narrow mode
+            if (!sidebar.classList.contains('sidebar-narrow')) {
+                if (dropdown.classList.contains('active')) {
+                    sidebar.classList.add('sidebar-expanded');
+                } else {
+                    // If no other dropdown is active, remove expansion
+                    if (!document.querySelector('.dropdown.active')) {
+                        sidebar.classList.remove('sidebar-expanded');
+                    }
+                }
+            }
+        }
+
+        // Close dropdown if clicking outside
+        document.addEventListener('click', (event) => {
+            dropdowns.forEach(drop => {
+                if (!drop.contains(event.target)) {
+                    drop.classList.remove('active');
+                }
+            });
+            // Remove 'expanded' if no dropdown is active
+            if (!document.querySelector('.dropdown.active')) {
+                sidebar.classList.remove('sidebar-expanded');
+            }
+        });
+    </script>
+    {% block scripts %}{% endblock %}
 </body>
 </html>

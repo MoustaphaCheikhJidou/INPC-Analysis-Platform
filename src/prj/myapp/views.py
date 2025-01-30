@@ -27,8 +27,53 @@ from django.contrib.auth.decorators import login_required
 from decimal import Decimal
 from datetime import datetime, date
 import calendar
+import matplotlib.pyplot as plt
+import seaborn as sns
+from io import BytesIO
+from django.http import HttpResponse
+from django.shortcuts import render
+from django.db.models import Sum, Avg, F, DecimalField
+from django.db.models.functions import Coalesce
+from decimal import Decimal
+from datetime import datetime
+import calendar
+from django.db.models import Count
 
+from .models import ProductType, Product, CartProducts, ProductPrice
 
+from django.contrib.auth.decorators import login_required
+import io
+import base64
+import matplotlib
+matplotlib.use('Agg') 
+# ====================
+# Chart Generation
+# ====================
+def get_inpc_chart_data():
+    today = datetime.now()
+    last_6_months = []
+    current_year = today.year
+    current_month = today.month
+
+    for i in range(6):
+        mo = current_month - i
+        yr = current_year
+        if mo <= 0:
+            mo += 12
+            yr -= 1
+        last_6_months.append((yr, mo))
+
+    inpc_data = []
+    for (yr, mo) in reversed(last_6_months):
+        inpc_value = calculer_inpc_global_mensuel(annee=yr, mois=mo)
+        inpc_data.append({
+            'year': yr,
+            'month': mo,
+            'month_name': calendar.month_name[mo],
+            'inpc': inpc_value
+        })
+
+    return inpc_data
 def calculer_inpc_global_mensuel(annee, mois):
     """
     Calcule l'Indice National des Prix à la Consommation (INPC) pour un mois et une année donnés.
@@ -59,163 +104,105 @@ def calculer_inpc_global_mensuel(annee, mois):
     )['total_pondere']
 
     # Calcul de l'INPC en pourcentage
-    inpc = (somme_produits_ponderees / somme_ponderations * Decimal('100')) if somme_ponderations > Decimal('0.00') else Decimal('0.00')
+    inpc = (somme_produits_ponderees / somme_ponderations * Decimal('100')) if somme_ponderations > 0 else Decimal('0.00')
     return inpc
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.db.models import Count, Sum, Avg
+from datetime import datetime
+import calendar
+from decimal import Decimal
+from django.db.models.functions import Coalesce
+from django.db.models import DecimalField
 
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from django.db.models import Count, Sum, Avg
+from datetime import datetime
+import calendar
+from decimal import Decimal
+from django.core.serializers.json import DjangoJSONEncoder
+import json
 
-# ====================
-# INPC Detailed View (Optional)
-# ====================
+@login_required
 def home_view(request):
     """
-    Page d'accueil affichant l'INPC des 6 derniers mois.
+    Génère le tableau de bord interactif avec les statistiques et graphiques Django-ChartJS.
     """
     today = datetime.now()
 
-    # Générer une liste des 6 derniers mois (année, mois)
-    last_6_months = []
-    current_year = today.year
-    current_month = today.month
-
-    for i in range(6):
-        mo = current_month - i
-        yr = current_year
-        if mo <= 0:
-            mo += 12
-            yr -= 1
-        last_6_months.append((yr, mo))
-
-    # Calculer l'INPC pour chaque mois
+    # 🔹 Générer la liste des 6 derniers mois
+    last_6_months = [(today.year, today.month - i) for i in range(6)]
+    last_6_months = [(yr - 1, mo + 12) if mo <= 0 else (yr, mo) for yr, mo in last_6_months]
+    
     inpc_data = []
-    for (yr, mo) in reversed(last_6_months):  # Du plus ancien au plus récent
+    for (yr, mo) in reversed(last_6_months):
         inpc_value = calculer_inpc_global_mensuel(annee=yr, mois=mo)
         inpc_data.append({
             'year': yr,
             'month': mo,
             'month_name': calendar.month_name[mo],
-            'inpc': round(inpc_value, 2)  # Arrondir à 2 décimales pour l'affichage
+            'inpc': round(inpc_value, 2)
         })
 
-    context = {
-        'inpc_data': inpc_data,  # Liste de 6 dictionnaires {year, month, month_name, inpc}
+    # 🔹 Calcul des statistiques globales
+    total_products_calculated = Product.objects.count()
+    total_weights = CartProducts.objects.aggregate(total_weight=Sum('weight'))['total_weight'] or Decimal('0.00')
+    inpc_global = calculer_inpc_global_mensuel(today.year, today.month) or Decimal('0.00')
+    average_inpc_6_months = sum(item['inpc'] for item in inpc_data) / len(inpc_data) if inpc_data else Decimal('0.00')
+
+    # 📊 Préparer les données pour les graphiques
+    products_by_type = Product.objects.values('product_type__label').annotate(count=Count('id'))
+    product_type_distribution = ProductType.objects.annotate(num_products=Count('product'))
+    avg_price_by_product_type = ProductPrice.objects.values('product__product_type__label').annotate(avg_price=Avg('value'))
+    pos_by_commune = PointOfSale.objects.values('commune__name').annotate(count=Count('id'))
+    total_weight_by_cart = CartProducts.objects.values('cart__name').annotate(total_weight=Sum('weight'))
+
+    chart_data = {
+        'inpc_trends': {
+            'labels': [item['month_name'] for item in inpc_data],
+            'data': [item['inpc'] for item in inpc_data],
+        },
+        'products_by_type': {
+            'labels': [item['product_type__label'] for item in products_by_type],
+            'data': [item['count'] for item in products_by_type],
+        },
+        'product_type_distribution': {
+            'labels': [pt.label for pt in product_type_distribution],
+            'data': [pt.num_products for pt in product_type_distribution],
+        },
+        'avg_price_by_product_type': {
+            'labels': [item['product__product_type__label'] for item in avg_price_by_product_type],
+            'data': [round(item['avg_price'], 2) if item['avg_price'] else 0 for item in avg_price_by_product_type],
+        },
+        'pos_by_commune': {
+            'labels': [item['commune__name'] for item in pos_by_commune],
+            'data': [item['count'] for item in pos_by_commune],
+        },
+        'total_weight_by_cart': {
+            'labels': [item['cart__name'] for item in total_weight_by_cart],
+            'data': [round(item['total_weight'], 2) if item['total_weight'] else 0 for item in total_weight_by_cart],
+        },
     }
+
+    # 🔹 Sérialiser les données des graphiques en JSON
+    chart_data_json = json.dumps(chart_data, cls=DjangoJSONEncoder)
+
+    # 🔹 Rendre le template avec les données statistiques et graphiques
+    context = {
+        'inpc_data': inpc_data,
+        'inpc_global': round(inpc_global, 2),
+        'total_products_calculated': total_products_calculated,
+        'total_weights': round(total_weights, 2),
+        'average_inpc': round(average_inpc_6_months, 2),
+        'chart_data': chart_data_json,  # Ajouter les données des graphiques
+    }
+
     return render(request, 'home.html', context)
-def inpc_view(request):
-    """
-    Vue détaillée pour calculer l'INPC en fonction de l'année et du mois sélectionnés.
-    Note : Comme vous n'utilisez pas forms.py, cette vue gère manuellement les paramètres GET.
-    """
-    # Année de base
-    ANNEE_BASE = 2019
-
-    # Récupérer l'année et le mois à partir de la requête, sinon utiliser l'année et le mois actuels
-    annee_courante = request.GET.get('annee', datetime.now().year)
-    mois_courant = request.GET.get('mois', datetime.now().month)
-
-    try:
-        annee_courante = int(annee_courante)
-        mois_courant = int(mois_courant)
-    except ValueError:
-        # En cas de valeurs invalides, utiliser l'année et le mois actuels
-        annee_courante = datetime.now().year
-        mois_courant = datetime.now().month
-
-    # Récupérer tous les types de produits (catégories COICOP)
-    types_produits = ProductType.objects.all()
-
-    # Dictionnaires pour stocker les résultats
-    inpc_par_groupe = []
-    inpc_global = Decimal('0.00')
-
-    # Calculer l'INPC pour chaque type de produit
-    for type_produit in types_produits:
-        # Récupérer les produits de ce type
-        produits = Product.objects.filter(product_type=type_produit)
-
-        # Variables pour stocker les totaux
-        prix_total_base = Decimal('0.00')
-        prix_total_courant = Decimal('0.00')
-        poids_total = Decimal('0.00')
-        produits_calcules = 0
-
-        for produit in produits:
-            # Récupérer les prix pour l'année de base
-            prix_base = ProductPrice.objects.filter(
-                product=produit,
-                date_from__year=ANNEE_BASE,
-                date_from__month=mois_courant
-            ).order_by('-date_from').first()
-
-            # Récupérer les prix pour l'année courante
-            prix_courant = ProductPrice.objects.filter(
-                product=produit,
-                date_from__year=annee_courante,
-                date_from__month=mois_courant
-            ).order_by('-date_from').first()
-
-            # Récupérer le poids du produit dans les paniers
-            cart_products = CartProducts.objects.filter(
-                product=produit,
-                date_from__year__lte=annee_courante,
-                date_to__year__gte=annee_courante
-            )
-
-            # Vérifier que tous les éléments nécessaires sont présents
-            if prix_base and prix_courant and cart_products.exists():
-                # Calculer la moyenne des pondérations
-                poids_moyen = cart_products.aggregate(
-                    Avg('weight', output_field=DecimalField())
-                )['weight__avg'] or Decimal('0.00')
-
-                # Ajouter au total uniquement si le poids est significatif
-                if poids_moyen > Decimal('0.00'):
-                    prix_total_base += prix_base.value * poids_moyen
-                    prix_total_courant += prix_courant.value * poids_moyen
-                    poids_total += poids_moyen
-                    produits_calcules += 1
-
-        # Calculer l'INPC pour ce groupe de produits
-        # INPC = (Prix courant / Prix base) * 100
-        inpc_groupe = (prix_total_courant / prix_total_base * Decimal('100')) if prix_total_base > Decimal('0.00') else Decimal('0.00')
-
-        # N'ajouter que les groupes avec des produits calculés
-        if produits_calcules > 0:
-            inpc_par_groupe.append({
-                'Année': annee_courante,
-                'Mois': mois_courant,
-                'month_name': calendar.month_name[mois_courant],
-                'Groupe': type_produit.label,  # Utiliser 'label' selon votre modèle
-                'INPC': round(inpc_groupe, 2),  # Arrondir à 2 décimales pour l'affichage
-                'Produits Calculés': produits_calcules
-            })
-
-    # Calculer l'INPC global
-    if inpc_par_groupe:
-        inpc_total = sum(groupe['INPC'] for groupe in inpc_par_groupe) / len(inpc_par_groupe)
-    else:
-        inpc_total = Decimal('0.00')
-
-    inpc_global = round(inpc_total, 2)
-
-    # Préparer les options d'années et de mois pour le formulaire
-    annees_disponibles = sorted(set(
-        ProductPrice.objects.values_list('date_from__year', flat=True).distinct()
-    ))
-    mois_disponibles = range(1, 13)  # Mois de 1 à 12
-
-    context = {
-        'annee_base': ANNEE_BASE,
-        'annee_courante': annee_courante,
-        'mois_courant': mois_courant,
-        'annees_disponibles': annees_disponibles,
-        'mois_disponibles': mois_disponibles,
-        'inpc_par_groupe': inpc_par_groupe,
-        'inpc_global': inpc_global
-    }
-
-    return render(request, 'inpc.html', context)
 
 
+@login_required
 def commune_list_view(request):
     """
     Vue unique gérant à la fois :
@@ -325,6 +312,7 @@ def commune_list_view(request):
     }
     return render(request, 'commune.html', context)
 
+@login_required
 def import_data_view(request):
     """
     Gère l'import des données Excel pour
@@ -380,6 +368,7 @@ def import_data_view(request):
     # Méthode GET ou si pas de fichier, on peut juste rediriger vers la liste
     return redirect("commune-list")
 
+@login_required
 def point_of_sale_list_view(request):
     """
     Affiche la liste des points de vente (PointOfSale) avec :
@@ -487,6 +476,8 @@ def point_of_sale_list_view(request):
         "search": search,
     }
     return render(request, "pointofsale_list.html", context)
+
+@login_required
 def import_point_of_sale_view(request):
     """
     Gère l'import Excel pour PointOfSale.
@@ -576,6 +567,7 @@ class PointOfSaleDeleteView(DeleteView):
 # ====================
 # Product Views
 # ====================
+@login_required
 def product_list_view(request):
     """
     Affiche la liste des produits (Product) avec :
@@ -676,12 +668,12 @@ def product_list_view(request):
         "search": search
     }
     return render(request, "product_list.html", context)
-
+@login_required
 def import_product_view(request):
     """
     Gère l'import Excel pour Product.
     Suppose qu'on lit un fichier avec colonnes :
-      code | name | description | unit_measure | product_type
+      code | name | description | unit_measure | product_type_code
       (ligne d'en-tête ignorée, min_row=2)
     """
     if request.method == "POST":
@@ -702,7 +694,14 @@ def import_product_view(request):
                     name = row[1]
                     description = row[2]
                     unit_measure = row[3]
-                    product_type = row[4]
+                    product_type_code = row[4]  # Assurez-vous que c'est le code, pas le label
+
+                    # Récupérer le ProductType correspondant
+                    try:
+                        product_type = ProductType.objects.get(code=product_type_code)
+                    except ProductType.DoesNotExist:
+                        messages.error(request, f"Type de produit '{product_type_code}' introuvable pour le produit '{code}'.")
+                        continue  # Aller à la ligne suivante
 
                     # Mise à jour ou création
                     Product.objects.update_or_create(
@@ -711,7 +710,7 @@ def import_product_view(request):
                             "name": name,
                             "description": description,
                             "unit_measure": unit_measure,
-                            "product_type": product_type
+                            "product_type": product_type  # Assigner l'objet ProductType
                         }
                     )
             messages.success(request, "Importation réussie.")
@@ -757,6 +756,7 @@ class ProductDeleteView(DeleteView):
 # ====================
 # Product Price Views
 # ====================
+@login_required
 def productprice_list_view(request):
     """
     Affiche la liste des prix des produits (ProductPrice) avec :
@@ -864,6 +864,7 @@ def productprice_list_view(request):
         "selected_pos": selected_pos
     }
     return render(request, "productprice_list.html", context)
+@login_required
 def import_productprice_view(request):
     """
     Gère l'import Excel pour ProductPrice.
@@ -944,6 +945,7 @@ class ProductPriceDeleteView(DeleteView):
 # ====================
 # Cart Views
 # ====================
+@login_required
 def cart_list_view(request):
     """
     Affiche la liste des paniers (Cart) avec :
@@ -1027,6 +1029,7 @@ def cart_list_view(request):
         'search': search
     }
     return render(request, 'cart_list.html', context)
+@login_required
 def import_cart_view(request):
     """
     Gère l'import Excel pour Cart.
@@ -1091,6 +1094,7 @@ class CartDeleteView(DeleteView):
 # ====================
 # Cart Products Views
 # ====================
+@login_required
 def cartproducts_list_view(request):
     """
     Affiche la liste des produits dans les paniers (CartProducts) avec :
@@ -1178,6 +1182,8 @@ def cartproducts_list_view(request):
         "search": search,
     }
     return render(request, "cartproducts_list.html", context)
+
+@login_required
 def import_cartproducts_view(request):
     """
     Gère l'import Excel pour CartProducts.
@@ -1255,4 +1261,154 @@ class CartProductsDeleteView(DeleteView):
     model = CartProducts
     template_name = 'cartproducts-confirm-delete.html'
     success_url = reverse_lazy('cartproducts-list')
+
+
+# =========================
+# Product Type Views
+# =========================
+@login_required
+def producttype_list_view(request):
+    """
+    Affiche la liste des types de produits (ProductType) avec :
+      - Recherche (code, label, description)
+      - Export Excel (via ?export=excel)
+      - Pagination
+      - Réponse JSON (si AJAX)
+    """
+
+    # 1) Paramètres GET
+    search = request.GET.get('search', '').strip()
+    page_number = request.GET.get('page', 1)
+    export_param = request.GET.get('export', '').strip()  # ?export=excel
+
+    # 2) Construction du queryset (filtrage)
+    product_types_qs = ProductType.objects.all()
+
+    if search:
+        product_types_qs = product_types_qs.filter(
+            Q(code__icontains=search) |
+            Q(label__icontains=search) |
+            Q(description__icontains=search)
+        )
+
+    # 3) Export en Excel (si ?export=excel)
+    if export_param == 'excel':
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "ProductTypes"
+
+        # En-têtes de colonnes
+        ws.append(["ID", "Code", "Label", "Description"])
+
+        # Pas de pagination pour l'export
+        for pt in product_types_qs:
+            ws.append([
+                pt.id,
+                pt.code,
+                pt.label,
+                pt.description
+            ])
+
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+        response = HttpResponse(
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        response["Content-Disposition"] = 'attachment; filename="product_types.xlsx"'
+        response.write(output.getvalue())
+        return response
+
+    # 4) Mode standard (HTML ou AJAX)
+    paginator = Paginator(product_types_qs, 10)  # 10 types par page
+    page_obj = paginator.get_page(page_number)
+
+    # Mode AJAX => JSON
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        data = {
+            "product_types": [],
+            "pagination": {
+                "current_page": page_obj.number,
+                "num_pages": page_obj.paginator.num_pages,
+                "has_next": page_obj.has_next(),
+                "has_previous": page_obj.has_previous(),
+            }
+        }
+        for pt in page_obj:
+            data["product_types"].append({
+                "id": pt.id,
+                "code": pt.code,
+                "label": pt.label,
+                "description": pt.description
+            })
+        return JsonResponse(data, safe=False)
+
+    # Mode HTML
+    context = {
+        "page_obj": page_obj,
+        "search": search
+    }
+    return render(request, "producttype_list.html", context)
+@login_required
+def import_producttype_view(request):
+    """
+    Gère l'import Excel pour ProductType.
+    Suppose qu'on lit un fichier avec colonnes :
+      code | label | description
+      (ligne d'en-tête ignorée, min_row=2)
+    """
+    if request.method == "POST":
+        excel_file = request.FILES.get("excel_file")
+        if not excel_file:
+            messages.error(request, "Aucun fichier sélectionné.")
+            return redirect("producttype-list")
+
+        try:
+            wb = load_workbook(excel_file)
+            sheet = wb.active
+
+            with transaction.atomic():
+                for row in sheet.iter_rows(min_row=2, values_only=True):
+                    if not row:
+                        continue  # ligne vide
+                    code, label, description = row
+
+                    # Mise à jour ou création
+                    ProductType.objects.update_or_create(
+                        code=code,
+                        defaults={
+                            "label": label,
+                            "description": description,
+                        }
+                    )
+            messages.success(request, "Importation réussie.")
+        except Exception as e:
+            messages.error(request, f"Erreur lors de l'import : {e}")
+
+    return redirect("producttype-list")
+
+class ProductTypeDetailView(DetailView):
+    model = ProductType
+    template_name = 'producttype-detail.html'
+    context_object_name = 'producttype'
+
+class ProductTypeCreateView(CreateView):
+    model = ProductType
+    fields = ['code', 'label', 'description']
+    template_name = 'producttype-form.html'
+    success_url = reverse_lazy('producttype-list')
+
+class ProductTypeUpdateView(UpdateView):
+    model = ProductType
+    fields = ['code', 'label', 'description']
+    template_name = 'producttype-form.html'
+    success_url = reverse_lazy('producttype-list')
+
+class ProductTypeDeleteView(DeleteView):
+    model = ProductType
+    template_name = 'producttype-confirm-delete.html'
+    success_url = reverse_lazy('producttype-list')
+
+# myapp/views.py
 

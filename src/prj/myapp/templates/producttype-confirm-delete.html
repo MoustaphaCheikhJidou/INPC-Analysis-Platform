@@ -1,11 +1,17 @@
 {% extends "base.html" %}
 
-{% block title %}<title>Delete Product Type</title>{% endblock %}
+{% block title %}Supprimer un Type de Produit{% endblock %}
 
 {% block content %}
-<form action="" method="post" class="p-5 text-center">
-    {% csrf_token %}
-    <p class="h5 p-3">Are you sure you want to delete "{{ object }}"?</p>
-    <input type="submit" value="Confirm" class="btn btn-danger"/>
-</form>
+<div class="container">
+    <h1 class="text-center">Supprimer un Type de Produit</h1>
+    <form method="post" class="p-5 text-center">
+        {% csrf_token %}
+        <p class="h5 p-3">Êtes-vous sûr de vouloir supprimer "{{ producttype.label }}" ?</p>
+        <div class="d-flex justify-content-center">
+            <button type="submit" class="btn btn-danger me-2">Confirmer</button>
+            <a href="{% url 'producttype-list' %}" class="btn btn-secondary">Annuler</a>
+        </div>
+    </form>
+</div>
 {% endblock %}

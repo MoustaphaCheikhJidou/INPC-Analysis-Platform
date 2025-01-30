@@ -1,26 +1,22 @@
 {% extends "base.html" %}
 
-{% block title %}Liste des prix des produits{% endblock %}
+{% block title %}Liste des Types de Produits{% endblock %}
 
 {% block content %}
 <div class="container mt-5">
-    <!-- Messages éventuels -->
     {% if messages %}
-      {% for msg in messages %}
-        <div class="alert alert-{{ msg.tags }}">{{ msg }}</div>
-      {% endfor %}
+    {% for msg in messages %}
+    <div class="alert alert-{{ msg.tags }}">{{ msg }}</div>
+    {% endfor %}
     {% endif %}
 
-    <h1 class="text-center mb-4">Liste des prix des produits</h1>
+    <h1 class="text-center mb-4">Liste des Types de Produits</h1>
 
-    <!-- Formulaire GET (ex. recherche) -->
     <form method="GET" class="mb-4">
         <div class="row g-3">
             <div class="col-md-3">
                 <label for="searchInput" class="form-label">Recherche :</label>
-                <input type="text" id="searchInput" name="search" class="form-control"
-                       placeholder="Nom produit, type point de vente..."
-                       value="{{ search }}">
+                <input type="text" id="searchInput" name="search" class="form-control" placeholder="Code, label, description..." value="{{ search }}">
             </div>
             <div class="col-md-3 d-flex align-items-end">
                 <button type="submit" class="btn btn-secondary w-100">
@@ -30,15 +26,13 @@
         </div>
     </form>
 
-    <!-- Bouton export Excel -->
     <div class="mb-3">
         <button id="exportExcelBtn" class="btn btn-success">
             Exporter en Excel
         </button>
     </div>
 
-    <!-- Formulaire import Excel -->
-    <form method="POST" action="{% url 'productprice-import' %}" enctype="multipart/form-data" class="mb-4">
+    <form method="POST" action="{% url 'producttype-import' %}" enctype="multipart/form-data" class="mb-4">
         {% csrf_token %}
         <div class="input-group">
             <input type="file" name="excel_file" class="form-control" accept=".xlsx,.xls">
@@ -46,55 +40,45 @@
         </div>
     </form>
 
-    <!-- Lien pour ajouter un prix -->
-    <a href="{% url 'productprice-create' %}" class="btn btn-primary mb-3">Ajouter un prix</a>
+    <a href="{% url 'producttype-create' %}" class="btn btn-primary mb-3">Ajouter un Type de Produit</a>
 
-    <!-- Tableau -->
     <table class="table table-bordered">
         <thead class="table-dark">
             <tr>
-                <th>Produit</th>
-                <th>Point de Vente</th>
-                <th>Prix</th>
-                <th>Date Début</th>
-                <th>Date Fin</th>
+                <th>Code</th>
+                <th>Label</th>
+                <th>Description</th>
                 <th>Actions</th>
             </tr>
         </thead>
-        <tbody id="productPriceTableBody">
-            {% for productprice in page_obj %}
+        <tbody id="productTypeTableBody">
+            {% for producttype in page_obj %}
             <tr>
-                <td>{{ productprice.product.name }}</td>
-                <td>{{ productprice.point_of_sale.type }}</td>
-                <td>{{ productprice.value }}</td>
-                <td>{{ productprice.date_from|date:"j N Y" }}</td>
-                <td>{{ productprice.date_to|default_if_none:"-"|date:"j N Y" }}</td>
+                <td>{{ producttype.code }}</td>
+                <td>{{ producttype.label }}</td>
+                <td>{{ producttype.description }}</td>
                 <td>
-                    <a href="{% url 'productprice-detail' productprice.pk %}" class="btn btn-info btn-sm">Voir</a>
-                    <a href="{% url 'productprice-update' productprice.pk %}" class="btn btn-warning btn-sm">Modifier</a>
-                    <a href="{% url 'productprice-delete' productprice.pk %}" class="btn btn-danger btn-sm">
-                        Supprimer
-                    </a>
+                    <a href="{% url 'producttype-detail' producttype.pk %}" class="btn btn-info btn-sm">Voir</a>
+                    <a href="{% url 'producttype-update' producttype.pk %}" class="btn btn-warning btn-sm">Modifier</a>
+                    <a href="{% url 'producttype-delete' producttype.pk %}" class="btn btn-danger btn-sm">Supprimer</a>
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="6" class="text-center">
-                    Aucun prix n'a été défini pour le moment.
+                <td colspan="4" class="text-center">
+                    Aucun type de produit n'a été trouvé.
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 
-    <!-- Pagination statique -->
     {% if page_obj.has_other_pages %}
     <nav id="staticPagination" class="mt-3">
         <ul class="pagination">
             {% if page_obj.has_previous %}
             <li class="page-item">
-                <a class="page-link"
-                   href="?page={{ page_obj.previous_page_number }}&search={{ search }}">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}&search={{ search }}">
                     Précédent
                 </a>
             </li>
@@ -106,8 +90,7 @@
             </li>
             {% if page_obj.has_next %}
             <li class="page-item">
-                <a class="page-link"
-                   href="?page={{ page_obj.next_page_number }}&search={{ search }}">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}&search={{ search }}">
                     Suivant
                 </a>
             </li>
@@ -116,7 +99,6 @@
     </nav>
     {% endif %}
 
-    <!-- Pagination AJAX (masquée au départ) -->
     <nav class="mt-3 d-none" id="ajaxPagination">
         <ul class="pagination justify-content-center">
             <li class="page-item">
@@ -132,97 +114,90 @@
     </nav>
 </div>
 
-<!-- Script AJAX (recherche, pagination), Export Excel -->
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-    const searchInput = document.getElementById("searchInput");
-    const productPriceTableBody = document.getElementById("productPriceTableBody");
+    document.addEventListener("DOMContentLoaded", function() {
+        const searchInput = document.getElementById("searchInput");
+        const productTypeTableBody = document.getElementById("productTypeTableBody");
 
-    const staticPagination = document.getElementById("staticPagination");
-    const ajaxPagination = document.getElementById("ajaxPagination");
-    const prevPageBtn = document.getElementById("prevPageBtn");
-    const nextPageBtn = document.getElementById("nextPageBtn");
-    const pageInfo = document.getElementById("pageInfo");
-    const exportExcelBtn = document.getElementById("exportExcelBtn");
+        const staticPagination = document.getElementById("staticPagination");
+        const ajaxPagination = document.getElementById("ajaxPagination");
+        const prevPageBtn = document.getElementById("prevPageBtn");
+        const nextPageBtn = document.getElementById("nextPageBtn");
+        const pageInfo = document.getElementById("pageInfo");
+        const exportExcelBtn = document.getElementById("exportExcelBtn");
 
-    let currentPage = 1;
+        let currentPage = 1;
 
-    function activateAjaxMode() {
-        if (staticPagination) {
-            staticPagination.classList.add("d-none");
-        }
-        ajaxPagination.classList.remove("d-none");
-    }
-
-    function fetchProductPrices(page=1) {
-        const searchVal = searchInput.value.trim();
-        let url = "/productprice/?page=" + page;
-        if (searchVal) {
-            url += "&search=" + encodeURIComponent(searchVal);
+        function activateAjaxMode() {
+            if (staticPagination) {
+                staticPagination.classList.add("d-none");
+            }
+            ajaxPagination.classList.remove("d-none");
         }
 
-        fetch(url, {
-            headers: { "X-Requested-With": "XMLHttpRequest" }
-        })
-        .then(response => response.json())
-        .then(data => {
-            activateAjaxMode();
-            productPriceTableBody.innerHTML = "";
+        function fetchProductTypes(page = 1) {
+            const searchVal = searchInput.value.trim();
+            let url = "{% url 'producttype-list' %}?page=" + page;
+            if (searchVal) {
+                url += "&search=" + encodeURIComponent(searchVal);
+            }
 
-            data.product_prices.forEach(pp => {
-                const row = document.createElement("tr");
+            fetch(url, {
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest"
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                activateAjaxMode();
+                productTypeTableBody.innerHTML = "";
 
-                const dateFrom = pp.date_from
-                    ? new Date(pp.date_from).toLocaleDateString()
-                    : "";
-                const dateTo = pp.date_to
-                    ? new Date(pp.date_to).toLocaleDateString()
-                    : "-";
+                data.product_types.forEach(pt => {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                        <td>${pt.code}</td>
+                        <td>${pt.label}</td>
+                        <td>${pt.description}</td>
+                        <td>
+                            <a href="{% url 'producttype-detail' 0 %}".replace('0', pt.id) class="btn btn-info btn-sm">Voir</a>
+                            <a href="{% url 'producttype-update' 0 %}".replace('0', pt.id) class="btn btn-warning btn-sm">Modifier</a>
+                            <a href="{% url 'producttype-delete' 0 %}".replace('0', pt.id) class="btn btn-danger btn-sm">Supprimer</a>
+                        </td>
+                    `;
+                    productTypeTableBody.appendChild(row);
+                });
 
-                row.innerHTML = `
-                    <td>${pp.product_name}</td>
-                    <td>${pp.point_of_sale}</td>
-                    <td>${pp.value}</td>
-                    <td>${dateFrom}</td>
-                    <td>${dateTo}</td>
-                    <td><!-- En mode AJAX, vous pouvez recréer les actions si besoin --></td>
-                `;
-                productPriceTableBody.appendChild(row);
-            });
-
-            currentPage = data.pagination.current_page;
-            pageInfo.textContent = "Page " + currentPage + " / " + data.pagination.num_pages;
-            prevPageBtn.disabled = !data.pagination.has_previous;
-            nextPageBtn.disabled = !data.pagination.has_next;
-        })
-        .catch(err => console.error("Erreur AJAX :", err));
-    }
-
-    // Recherche (keyup)
-    searchInput.addEventListener("keyup", () => {
-        currentPage = 1;
-        fetchProductPrices(currentPage);
-    });
-
-    // Pagination AJAX
-    prevPageBtn.addEventListener("click", () => {
-        if (currentPage > 1) {
-            fetchProductPrices(currentPage - 1);
+                currentPage = data.pagination.current_page;
+                pageInfo.textContent = "Page " + currentPage + " / " + data.pagination.num_pages;
+                prevPageBtn.disabled = !data.pagination.has_previous;
+                nextPageBtn.disabled = !data.pagination.has_next;
+            })
+            .catch(err => console.error("Erreur AJAX :", err));
         }
-    });
-    nextPageBtn.addEventListener("click", () => {
-        fetchProductPrices(currentPage + 1);
-    });
 
-    // Export Excel
-    exportExcelBtn.addEventListener("click", () => {
-        const searchVal = searchInput.value.trim();
-        let url = "/productprice/?export=excel";
-        if (searchVal) {
-            url += "&search=" + encodeURIComponent(searchVal);
-        }
-        window.location.href = url; // Téléchargement
+        searchInput.addEventListener("keyup", () => {
+            currentPage = 1;
+            fetchProductTypes(currentPage);
+        });
+
+        prevPageBtn.addEventListener("click", () => {
+            if (currentPage > 1) {
+                fetchProductTypes(currentPage - 1);
+            }
+        });
+
+        nextPageBtn.addEventListener("click", () => {
+            fetchProductTypes(currentPage + 1);
+        });
+
+        exportExcelBtn.addEventListener("click", () => {
+            const searchVal = searchInput.value.trim();
+            let url = "{% url 'producttype-list' %}?export=excel";
+            if (searchVal) {
+                url += "&search=" + encodeURIComponent(searchVal);
+            }
+            window.location.href = url;
+        });
     });
-});
 </script>
 {% endblock %}

@@ -7,3 +7,6 @@ geopy
 django-crispy-forms
 crispy-bootstrap4
 Pillow
+matplotlib
+seaborn
+django-chartjs

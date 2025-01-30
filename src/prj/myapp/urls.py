@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import (
-    home_view,inpc_view,
+    home_view,
     commune_list_view,import_point_of_sale_view,import_productprice_view, productprice_list_view,
     import_data_view,import_product_view,import_cartproducts_view,cartproducts_list_view,
     point_of_sale_list_view, PointOfSaleDetailView, PointOfSaleCreateView, PointOfSaleUpdateView, PointOfSaleDeleteView,
@@ -8,12 +8,14 @@ from .views import (
      ProductPriceDetailView, ProductPriceCreateView, ProductPriceUpdateView, ProductPriceDeleteView,
     cart_list_view, import_cart_view, CartDetailView, CartCreateView, CartUpdateView, CartDeleteView,
      CartProductsDetailView, CartProductsCreateView, CartProductsUpdateView, CartProductsDeleteView,
+producttype_list_view, import_producttype_view,
+    ProductTypeDetailView, ProductTypeCreateView, ProductTypeUpdateView, ProductTypeDeleteView 
 )
 
 
 urlpatterns = [
-    path('', home_view, name='home'),  # Page d'accueil
-    path('inpc/', inpc_view, name='calculer-inpc'), 
+    path('', home_view, name='home'),
+    #path('chart/data/', chart_data, name='chart_data'),
     path('communes/', commune_list_view, name='commune-list'),
     path('communes/import/', import_data_view, name='import_data'),
     # Point of Sale URLs
@@ -55,4 +57,12 @@ urlpatterns = [
     path('cart-products/<int:pk>/', CartProductsDetailView.as_view(), name='cartproducts-detail'),
     path('cart-products/<int:pk>/update/', CartProductsUpdateView.as_view(), name='cartproducts-update'),
     path('cart-products/<int:pk>/delete/', CartProductsDeleteView.as_view(), name='cartproducts-delete'),
+    
+     # Product Type URLs
+    path('producttypes/', producttype_list_view, name='producttype-list'),
+    path('producttypes/import/', import_producttype_view, name='producttype-import'),
+    path('producttypes/<int:pk>/', ProductTypeDetailView.as_view(), name='producttype-detail'),
+    path('producttypes/create/', ProductTypeCreateView.as_view(), name='producttype-create'),
+    path('producttypes/<int:pk>/update/', ProductTypeUpdateView.as_view(), name='producttype-update'),
+    path('producttypes/<int:pk>/delete/', ProductTypeDeleteView.as_view(), name='producttype-delete'),
 ]

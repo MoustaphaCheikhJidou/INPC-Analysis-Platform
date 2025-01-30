@@ -1,29 +1,209 @@
-<!-- templates/home.html -->
-
 {% extends "base.html" %}
+{% load static %}
 
 {% block content %}
-<div class="container mt-4">
-    <h1 class="text-center">INPC - Derniers 6 Mois</h1>
-    <div class="row mt-5">
-        <table class="table table-bordered table-hover">
-            <thead class="table-primary">
-                <tr>
-                    <th>Mois</th>
-                    <th>Année</th>
-                    <th>INPC (%)</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for data in inpc_data %}
-                    <tr>
-                        <td>{{ data.month_name }}</td> <!-- Affiche le nom complet du mois -->
-                        <td>{{ data.year }}</td>
-                        <td>{{ data.inpc }}</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <h1 class="text-3xl font-bold text-gray-800 mb-6">Tableau de bord INPC</h1>
+
+    <!-- ✅ Aperçu des Statistiques -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-lg p-4 shadow flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-600">INPC Global (Mois Actuel)</p>
+                <p class="text-2xl font-bold text-gray-800">{{ inpc_global|default:"N/A" }}</p>
+            </div>
+            <i class="fas fa-chart-line text-4xl text-blue-500"></i>
+        </div>
+        <div class="bg-white rounded-lg p-4 shadow flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-600">Produits Calculés</p>
+                <p class="text-2xl font-bold text-gray-800">{{ total_products_calculated }}</p>
+            </div>
+            <i class="fas fa-boxes text-4xl text-green-500"></i>
+        </div>
+        <div class="bg-white rounded-lg p-4 shadow flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-600">Pondérations Totales</p>
+                <p class="text-2xl font-bold text-gray-800">{{ total_weights }}</p>
+            </div>
+            <i class="fas fa-weight-hanging text-4xl text-yellow-500"></i>
+        </div>
+        <div class="bg-white rounded-lg p-4 shadow flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-600">Moyenne INPC (6 Mois)</p>
+                <p class="text-2xl font-bold text-gray-800">{{ average_inpc }}</p>
+            </div>
+            <i class="fas fa-chart-pie text-4xl text-red-500"></i>
+        </div>
+    </div>
+
+    <!-- ✅ Graphiques -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div class="bg-white rounded-lg p-4 shadow">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">INPC - Derniers 6 Mois</h2>
+            <canvas id="inpcChart"></canvas>
+        </div>
+        <div class="bg-white rounded-lg p-4 shadow">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">Nombre de Produits par Type</h2>
+            <canvas id="productsByTypeChart"></canvas>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div class="bg-white rounded-lg p-4 shadow">
+            <h2 class="text-lg font-bold text-gray-800 mb-3">Distribution des Types de Produits</h2>
+            <canvas id="productTypeDistributionChart"></canvas>
+        </div>
+        <div class="bg-white rounded-lg p-4 shadow">
+            <h2 class="text-lg font-bold text-gray-800 mb-3">Prix Moyen par Type de Produit</h2>
+            <canvas id="avgPriceByProductTypeChart"></canvas>
+        </div>
+        <div class="bg-white rounded-lg p-4 shadow">
+            <h2 class="text-lg font-bold text-gray-800 mb-3">Nombre de Points de Vente par Commune</h2>
+            <canvas id="posByCommuneChart"></canvas>
+        </div>
+        <div class="bg-white rounded-lg p-4 shadow">
+            <h2 class="text-lg font-bold text-gray-800 mb-3">Pondération Totale par Panier</h2>
+            <canvas id="totalWeightByCartChart"></canvas>
+        </div>
     </div>
 </div>
+
+<!-- ✅ Charger Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Optionnel : Charger Font Awesome pour les icônes si non déjà inclus -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-Fo3rlrZj/kTcQ1Z6bZkS9NQ5gBVhtN5mSazbLXtV8ZXzMEZsI/OcP6d0zH7uMTHP+IbR8TXmBoH9lXr/6zV6uA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+<style>
+    /* Assurez-vous que les canvases ont une hauteur suffisante */
+    canvas {
+        width: 100% !important;
+        height: 400px !important;
+    }
+</style>
+
+<script>
+    // Récupérer les données des graphiques depuis le contexte
+    const chartData = {{ chart_data|safe }};
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log("Données des graphiques reçues :", chartData);
+
+        /**
+         * Fonction utilitaire pour créer un graphique
+         * @param {string} id - ID de l'élément canvas
+         * @param {string} type - Type de graphique (bar, line, pie, etc.)
+         * @param {Array} labels - Labels pour l'axe des X
+         * @param {Array} dataSet - Données du graphique
+         * @param {string} label - Label pour le dataset
+         * @param {Array|string} backgroundColor - Couleur(s) de fond
+         */
+        function createChart(id, type, labels, dataSet, label, backgroundColor) {
+            const canvas = document.getElementById(id);
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    new Chart(ctx, {
+                        type: type,
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: label,
+                                data: dataSet,
+                                backgroundColor: backgroundColor,
+                                borderColor: type === 'pie' ? undefined : "rgba(75, 192, 192, 1)",
+                                borderWidth: 2,
+                                fill: type === 'line' ? false : true
+                            }]
+                        },
+                        options: { 
+                            responsive: true, 
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: type !== 'bar' && type !== 'line'
+                                }
+                            }
+                        }
+                    });
+                    console.log(`Graphique ${id} créé avec succès.`);
+                } else {
+                    console.error(`Impossible d'obtenir le contexte 2D pour le canvas ID "${id}".`);
+                }
+            } else {
+                console.error(`Canvas avec l'ID "${id}" introuvable.`);
+            }
+        }
+
+        if (chartData) {
+            // Graphique INPC - Derniers 6 Mois
+            createChart(
+                "inpcChart", 
+                "line", 
+                chartData.inpc_trends.labels, 
+                chartData.inpc_trends.data, 
+                "INPC (%)", 
+                "rgba(75, 192, 192, 0.6)"
+            );
+
+            // Graphique Nombre de Produits par Type
+            createChart(
+                "productsByTypeChart", 
+                "bar", 
+                chartData.products_by_type.labels, 
+                chartData.products_by_type.data, 
+                "Nombre de Produits", 
+                "rgba(54, 162, 235, 0.6)"
+            );
+
+            // Graphique Distribution des Types de Produits
+            createChart(
+                "productTypeDistributionChart", 
+                "pie", 
+                chartData.product_type_distribution.labels, 
+                chartData.product_type_distribution.data, 
+                "Distribution des Produits", 
+                ["#ff6384", "#36a2eb", "#ffce56", "#4bc0c0", "#9966ff", "#ff9f40"]
+            );
+
+            // Graphique Prix Moyen par Type de Produit
+            createChart(
+                "avgPriceByProductTypeChart", 
+                "bar", 
+                chartData.avg_price_by_product_type.labels, 
+                chartData.avg_price_by_product_type.data, 
+                "Prix Moyen (€)", 
+                "rgba(255, 159, 64, 0.6)"
+            );
+
+            // Graphique Nombre de Points de Vente par Commune
+            createChart(
+                "posByCommuneChart", 
+                "bar", 
+                chartData.pos_by_commune.labels, 
+                chartData.pos_by_commune.data, 
+                "Nombre de Points de Vente", 
+                "rgba(153, 102, 255, 0.6)"
+            );
+
+            // Graphique Pondération Totale par Panier
+            createChart(
+                "totalWeightByCartChart", 
+                "bar", 
+                chartData.total_weight_by_cart.labels, 
+                chartData.total_weight_by_cart.data, 
+                "Pondération Totale", 
+                "rgba(201, 203, 207, 0.6)"
+            );
+        } else {
+            console.error("Aucune donnée reçue pour les graphiques.");
+        }
+    });
+</script>
+
+<!-- Optionnel : Masquer les données de débogage après vérification -->
+<script>
+    // Supprimer l'affichage des données de débogage après vérification
+    document.getElementById('debug-chart-data').style.display = 'none';
+</script>
 {% endblock %}

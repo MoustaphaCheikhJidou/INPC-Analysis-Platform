@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Product Type Details</h1>
-<ul>
-    <li><strong>ID:</strong> {{ producttype.id }}</li>
-    <li><strong>Code:</strong> {{ producttype.code }}</li>
-    <li><strong>Label:</strong> {{ producttype.label }}</li>
-    <li><strong>Description:</strong> {{ producttype.description }}</li>
+<h1>Détails du Type de Produit</h1>
+<ul class="list-group">
+    <li class="list-group-item"><strong>ID:</strong> {{ producttype.id }}</li>
+    <li class="list-group-item"><strong>Code:</strong> {{ producttype.code }}</li>
+    <li class="list-group-item"><strong>Label:</strong> {{ producttype.label }}</li>
+    <li class="list-group-item"><strong>Description:</strong> {{ producttype.description }}</li>
 </ul>
-<a href="{% url 'producttype_list' %}" class="btn btn-secondary">Back to List</a>
+<a href="{% url 'producttype-list' %}" class="btn btn-secondary mt-3">Retour à la Liste</a>
 {% endblock %}

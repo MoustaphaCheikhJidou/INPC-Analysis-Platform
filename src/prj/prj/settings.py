@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-ighi#_@d7)4f#1ba(=z(xrtx$ze_-pbmsu*t+p$p7mp#vlw_70
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -40,7 +40,9 @@ INSTALLED_APPS = [
     'myapp',
     'users',  # Assurez-vous que cette ligne est présente
         "crispy_forms", 
-    "crispy_bootstrap4"
+    "crispy_bootstrap4",
+    'chartjs',
+    
 ]
 
 MIDDLEWARE = [
@@ -84,7 +86,7 @@ DATABASES = {
         'NAME': 'django_db',
         "USER": "django_user",
         "PASSWORD": "django_password",
-        "HOST": "mydb",
+        "HOST": "mydb_23231",
         "PORT": "3306",
         "CHARSET": "UTF8",
         'OPTIONS': {
@@ -147,4 +149,4 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'elmoustapha.cheikh.jiddou@gmail.com'
 EMAIL_HOST_PASSWORD = 'rmjt ndxq amwi oarc'
-CSRF_TRUSTED_ORIGINS = ['http://138.201.52.29:25231']'
+CSRF_TRUSTED_ORIGINS = ['http://138.201.52.29:25231',' http://teaching.sidi.xyz:25231']
