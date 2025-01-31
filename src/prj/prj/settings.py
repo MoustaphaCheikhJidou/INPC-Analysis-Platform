@@ -88,7 +88,7 @@ DATABASES = {
         'NAME': 'django_db',
         'USER': 'django_user',
         'PASSWORD': 'django_password',
-        'HOST': 'mydb_23231',
+        'HOST': 'mydb-23231',
         'PORT': '3306',
         'OPTIONS': {
             'charset': 'utf8mb4',  # Correction : 'charset' au lieu de 'CHARSET'
