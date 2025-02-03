@@ -1,0 +1,18 @@
+<div class="p-4">
+    <dl class="grid grid-cols-2 gap-4">
+        <dt class="font-semibold text-gray-700">Produit:</dt>
+        <dd class="text-gray-900">{{ cartproducts.product.name }}</dd>
+
+        <dt class="font-semibold text-gray-700">Panier:</dt>
+        <dd class="text-gray-900">{{ cartproducts.cart.name }}</dd>
+
+        <dt class="font-semibold text-gray-700">Poids:</dt>
+        <dd class="text-gray-900">{{ cartproducts.weight }}</dd>
+
+        <dt class="font-semibold text-gray-700">Date d'ajout:</dt>
+        <dd class="text-gray-900">{{ cartproducts.date_from|date:"j M Y" }}</dd>
+
+        <dt class="font-semibold text-gray-700">Date de fin:</dt>
+        <dd class="text-gray-900">{{ cartproducts.date_to|default_if_none:"-"|date:"j M Y" }}</dd>
+    </dl>
+</div>

@@ -1,41 +1,38 @@
 {% extends "base.html" %}
 
-{% block title %}Liste des produits dans les paniers{% endblock %}
+{% block title %}Liste des Produits dans les Paniers{% endblock %}
 
 {% block content %}
 <div class="container mt-5">
-    <!-- Messages -->
     {% if messages %}
-      {% for msg in messages %}
-        <div class="alert alert-{{ msg.tags }}">{{ msg }}</div>
-      {% endfor %}
+        {% for msg in messages %}
+            <div class="alert alert-{{ msg.tags }}">{{ msg }}</div>
+        {% endfor %}
     {% endif %}
 
-    <h1 class="text-center mb-4">Liste des produits dans les paniers</h1>
+    <h1 class="mb-4 text-center text-2xl font-bold text-sky-800">Liste des Produits dans les Paniers</h1>
 
-    <!-- Formulaire GET pour la recherche -->
-    <form method="GET" class="mb-4">
-        <div class="row g-3">
-            <div class="col-md-3">
-                <label for="searchInput" class="form-label">Recherche :</label>
-                <input type="text" id="searchInput" name="search" class="form-control"
-                       value="{{ search }}" placeholder="Nom Produit / Nom Panier...">
-            </div>
-            <div class="col-md-3 d-flex align-items-end">
-                <button type="submit" class="btn btn-secondary w-100">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <form method="GET" class="mb-4">
+            <div class="flex">
+                <input type="text" id="searchInput" name="search" class="w-full px-3 py-2 border rounded-l-md focus:outline-none focus:ring-2 focus:ring-sky-500" placeholder="Recherche (nom produit, nom panier...)" value="{{ search }}">
+                <button type="submit" class="px-4 py-2 bg-sky-600 text-white rounded-r-md hover:bg-sky-700 transition-colors duration-200">
                     Rechercher
                 </button>
             </div>
-        </div>
-    </form>
+        </form>
 
-    <!-- Bouton Export Excel -->
-    <div class="mb-3">
-        <button id="exportExcelBtn" class="btn btn-success">Exporter en Excel</button>
+        <div class="flex justify-end space-x-2">
+            <button id="exportExcelBtn" style='height: 40px;' class="px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors duration-200 text-sm">
+                Exporter en Excel
+            </button>
+            <button type="button" style='height: 40px;' class="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200 text-sm" data-bs-toggle="modal" data-bs-target="#cartProductModal" data-url="{% url 'cartproducts-create' %}">
+                Ajouter
+            </button>
+        </div>
     </div>
 
-    <!-- Formulaire Import Excel -->
-    <form method="POST" action="{% url 'cartproducts-import' %}" enctype="multipart/form-data" class="mb-4">
+  <form method="POST" action="{% url 'cartproducts-import' %}" enctype="multipart/form-data" class="mb-4">
         {% csrf_token %}
         <div class="input-group">
             <input type="file" name="excel_file" class="form-control" accept=".xlsx,.xls">
@@ -43,60 +40,60 @@
         </div>
     </form>
 
-    <!-- Lien pour ajouter un produit au panier -->
-    <a href="{% url 'cartproducts-create' %}" class="btn btn-primary mb-4">
-        Ajouter un produit au panier
-    </a>
+    <div class="overflow-x-auto">
+        <table class="min-w-full bg-white border border-gray-300 rounded-lg shadow-md">
+            <thead class="bg-sky-700 text-white">
+                <tr>
+                    <th class="py-2 px-4 border-b text-left">Produit</th>
+                    <th class="py-2 px-4 border-b text-left">Panier</th>
+                    <th class="py-2 px-4 border-b text-left">Poids</th>
+                    <th class="py-2 px-4 border-b text-left">Date d'ajout</th>
+                    <th class="py-2 px-4 border-b text-left">Date de fin</th>
+                    <th class="py-2 px-4 border-b text-left">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="cartProductsTableBody">
+                {% for cp in cart_products %}
+                <tr class="hover:bg-sky-100 transition-colors duration-200">
+                    <td class="py-2 px-4 border-b">{{ cp.product.name }}</td>
+                    <td class="py-2 px-4 border-b">{{ cp.cart.name }}</td>
+                    <td class="py-2 px-4 border-b">{{ cp.weight }}</td>
+                    <td class="py-2 px-4 border-b">{{ cp.date_from|date:"M. j, Y" }}</td>
+                    <td class="py-2 px-4 border-b">{{ cp.date_to|default_if_none:"-"|date:"M. j, Y" }}</td>
+                    <td class="py-2 px-4 border-b">
+                        <button type="button" class="btn btn-info btn-sm hover:bg-sky-300 transition-colors duration-200" data-bs-toggle="modal" data-bs-target="#cartProductModal" data-url="{% url 'cartproducts-detail' cp.pk %}">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button type="button" class="btn btn-warning btn-sm hover:bg-yellow-200 transition-colors duration-200" data-bs-toggle="modal" data-bs-target="#cartProductModal" data-url="{% url 'cartproducts-update' cp.pk %}">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="btn btn-danger btn-sm hover:bg-red-200 transition-colors duration-200" data-bs-toggle="modal" data-bs-target="#cartProductModal" data-url="{% url 'cartproducts-delete' cp.pk %}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="py-2 px-4 border-b text-center">Aucun produit n'a encore été ajouté aux paniers.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
-    <!-- Tableau listant les CartProducts -->
-    <table class="table table-bordered">
-        <thead class="table-dark">
-            <tr>
-                <th>Produit</th>
-                <th>Panier</th>
-                <th>Poids</th>
-                <th>Date d'ajout</th>
-                <th>Date de fin</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody id="cartProductsTableBody">
-            {% for cp in cart_products %}
-            <tr>
-                <td>{{ cp.product.name }}</td>
-                <td>{{ cp.cart.name }}</td>
-                <td>{{ cp.weight }}</td>
-                <td>{{ cp.date_from|date:"M. j, Y" }}</td>
-                <td>{{ cp.date_to|default_if_none:"-"|date:"M. j, Y" }}</td>
-                <td>
-                    <a href="{% url 'cartproducts-detail' cp.pk %}" class="btn btn-info btn-sm">Voir</a>
-                    <a href="{% url 'cartproducts-update' cp.pk %}" class="btn btn-warning btn-sm">Modifier</a>
-                    <a href="{% url 'cartproducts-delete' cp.pk %}" class="btn btn-danger btn-sm">
-                        Supprimer
-                    </a>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="6" class="text-center">
-                    Aucun produit n'a encore été ajouté aux paniers.
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <!-- Pagination statique (non-AJAX) -->
-    {% if cart_products.has_other_pages %}
-    <nav id="staticPagination" class="mt-3">
-        <ul class="pagination">
+{% if cart_products.has_other_pages %}
+    <nav aria-label="Pagination Cart Products" class="mt-3" id="staticPagination">
+        <ul class="pagination justify-content-center">
             {% if cart_products.has_previous %}
-            <li class="page-item">
-                <a class="page-link"
-                   href="?page={{ cart_products.previous_page_number }}&search={{ search }}">
-                    Précédent
-                </a>
-            </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ cart_products.previous_page_number }}&search={{ search }}">
+                        Précédent
+                    </a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">Précédent</span>
+                </li>
             {% endif %}
             <li class="page-item disabled">
                 <span class="page-link">
@@ -104,119 +101,178 @@
                 </span>
             </li>
             {% if cart_products.has_next %}
-            <li class="page-item">
-                <a class="page-link"
-                   href="?page={{ cart_products.next_page_number }}&search={{ search }}">
-                    Suivant
-                </a>
-            </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ cart_products.next_page_number }}&search={{ search }}">
+                        Suivant
+                    </a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">Suivant</span>
+                </li>
             {% endif %}
         </ul>
     </nav>
-    {% endif %}
-
-    <!-- Pagination AJAX (masquée au départ) -->
-    <nav class="mt-3 d-none" id="ajaxPagination">
+{% else %}
+    <nav aria-label="Pagination Cart Products" class="mt-3" id="staticPagination">
         <ul class="pagination justify-content-center">
-            <li class="page-item">
-                <button class="page-link" id="prevPageBtn">Précédent</button>
+            <li class="page-item disabled">
+                <span class="page-link">Précédent</span>
             </li>
             <li class="page-item disabled">
-                <span class="page-link" id="pageInfo">Page ? / ?</span>
+                <span class="page-link">
+                    Page 1 / 1
+                </span>
             </li>
-            <li class="page-item">
-                <button class="page-link" id="nextPageBtn">Suivant</button>
+            <li class="page-item disabled">
+                <span class="page-link">Suivant</span>
             </li>
         </ul>
     </nav>
+{% endif %}
+
+<nav aria-label="Pagination Cart Products" class="mt-3 d-none" id="ajaxPagination">
+    <ul class="pagination justify-content-center">
+        <li class="page-item">
+            <button id="prevPageBtn" class="page-link" {% if not cart_products.has_previous %}disabled{% endif %}>Précédent</button>
+        </li>
+        <li class="page-item disabled">
+            <span id="pageInfo" class="page-link">Page {{ cart_products.number }} / {{ cart_products.paginator.num_pages }}</span>
+        </li>
+        <li class="page-item">
+            <button id="nextPageBtn" class="page-link" {% if not cart_products.has_next %}disabled{% endif %}>Suivant</button>
+        </li>
+    </ul>
+</nav>
+
+    <!-- Modal -->
+    <div class="modal fade" id="cartProductModal" tabindex="-1" aria-labelledby="cartProductModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content rounded-lg shadow-lg">
+                <div class="modal-header bg-sky-700 text-white rounded-t-lg">
+                    <h5 class="modal-title" id="cartProductModalLabel"></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4" id="cartProductModalBody">
+                    <!-- AJAX content will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
-<!-- Script pour AJAX & Export -->
 <script>
-document.addEventListener("DOMContentLoaded", function(){
-    const searchInput = document.getElementById("searchInput");
-    const cartProductsTableBody = document.getElementById("cartProductsTableBody");
+    document.addEventListener("DOMContentLoaded", function() {
+        const searchInput = document.getElementById("searchInput");
+        const cartProductsTableBody = document.getElementById("cartProductsTableBody");
+        const exportExcelBtn = document.getElementById("exportExcelBtn");
 
-    const staticPagination = document.getElementById("staticPagination");
-    const ajaxPagination = document.getElementById("ajaxPagination");
-    const prevPageBtn = document.getElementById("prevPageBtn");
-    const nextPageBtn = document.getElementById("nextPageBtn");
-    const pageInfo = document.getElementById("pageInfo");
-    const exportExcelBtn = document.getElementById("exportExcelBtn");
+        function fetchCartProducts(page = 1) {
+            const searchVal = searchInput.value.trim();
+            let url = "{% url 'cartproducts-list' %}?page=" + page;
+            if (searchVal) {
+                url += "&search=" + encodeURIComponent(searchVal);
+            }
 
-    let currentPage = 1;
+            fetch(url, {
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest"
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                cartProductsTableBody.innerHTML = "";
 
-    function activateAjaxMode() {
-        if (staticPagination) {
-            staticPagination.classList.add("d-none");
+                data.cart_products.forEach(cp => {
+                    const row = document.createElement("tr");
+                    const dateFrom = cp.date_from ? new Date(cp.date_from).toLocaleDateString() : "";
+                    const dateTo = cp.date_to ? new Date(cp.date_to).toLocaleDateString() : "-";
+
+                    row.innerHTML = `
+                        <td class="py-2 px-4 border-b">${cp.product}</td>
+                        <td class="py-2 px-4 border-b">${cp.cart}</td>
+                        <td class="py-2 px-4 border-b">${cp.weight !== null ? cp.weight : ""}</td>
+                        <td class="py-2 px-4 border-b">${dateFrom}</td>
+                        <td class="py-2 px-4 border-b">${dateTo}</td>
+                        <td class="py-2 px-4 border-b">
+                            <button type="button" class="btn btn-info btn-sm hover:bg-sky-300 transition-colors duration-200" data-bs-toggle="modal" data-bs-target="#cartProductModal" data-url="{% url 'cartproducts-detail' 0 %}".replace('0', cp.id)>
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button type="button" class="btn btn-warning btn-sm hover:bg-yellow-200 transition-colors duration-200" data-bs-toggle="modal" data-bs-target="#cartProductModal" data-url="{% url 'cartproducts-update' 0 %}".replace('0', cp.id)>
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm hover:bg-red-200 transition-colors duration-200" data-bs-toggle="modal" data-bs-target="#cartProductModal" data-url="{% url 'cartproducts-delete' 0 %}".replace('0', cp.id)>
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                    cartProductsTableBody.appendChild(row);
+                });
+            })
+            .catch(err => console.error("Erreur AJAX :", err));
         }
-        ajaxPagination.classList.remove("d-none");
-    }
 
-    function fetchCartProducts(page=1) {
-        const searchVal = searchInput.value.trim();
-        let url = "/cart-products/?page=" + page;
-        if (searchVal) {
-            url += "&search=" + encodeURIComponent(searchVal);
-        }
+        searchInput.addEventListener("keyup", () => {
+            fetchCartProducts();
+        });
 
-        fetch(url, {
-            headers: { "X-Requested-With": "XMLHttpRequest" }
-        })
-        .then(response => response.json())
-        .then(data => {
-            activateAjaxMode();
-            cartProductsTableBody.innerHTML = "";
+        exportExcelBtn.addEventListener("click", () => {
+            const searchVal = searchInput.value.trim();
+            let url = "{% url 'cartproducts-list' %}?export=excel";
+            if (searchVal) {
+                url += "&search=" + encodeURIComponent(searchVal);
+            }
+            window.location.href = url;
+        });
 
-            data.cart_products.forEach(cp => {
-                const row = document.createElement("tr");
-                const dateFrom = cp.date_from ? new Date(cp.date_from).toLocaleDateString() : "";
-                const dateTo = cp.date_to ? new Date(cp.date_to).toLocaleDateString() : "-";
+        // Modal show event
+        $('#cartProductModal').on('show.bs.modal', function (event) {
+            const button = $(event.relatedTarget);
+            const url = button.data('url');
+            const modal = $(this);
 
-                row.innerHTML = `
-                    <td>${cp.product}</td>
-                    <td>${cp.cart}</td>
-                    <td>${cp.weight !== null ? cp.weight : ""}</td>
-                    <td>${dateFrom}</td>
-                    <td>${dateTo}</td>
-                    <td><!-- Actions en mode AJAX si besoin --></td>
-                `;
-                cartProductsTableBody.appendChild(row);
+            $.ajax({
+                url: url,
+                method: 'GET',
+                success: function (data) {
+                    modal.find('.modal-body').html(data);
+                },
+                error: function (error) {
+                    console.error("Erreur AJAX:", error);
+                    modal.find('.modal-body').html("Une erreur s'est produite lors du chargement du contenu.");
+                }
             });
+        });
 
-            currentPage = data.pagination.current_page;
-            pageInfo.textContent = `Page ${currentPage} / ${data.pagination.num_pages}`;
-            prevPageBtn.disabled = !data.pagination.has_previous;
-            nextPageBtn.disabled = !data.pagination.has_next;
-        })
-        .catch(err => console.error("Erreur AJAX:", err));
-    }
+        // Form submission via AJAX
+        $('#cartProductModal').on('submit', 'form', function (event) {
+            event.preventDefault();
+            const form = $(this);
+            const modal = $('#cartProductModal');
 
-    // Recherche réactive
-    searchInput.addEventListener("keyup", () => {
-        currentPage = 1;
-        fetchCartProducts(currentPage);
-    });
+            $.ajax({
+                url: form.attr('action'),
+                method: form.attr('method'),
+                data: form.serialize(),
+                success: function (response) {
+                    if (response.success) {
+                        fetchCartProducts();
+                        modal.modal('hide');
+                        alert(response.message);
+                    } else {
+                        modal.find('.modal-body').html(response.form_html);
+                    }
+                },
+                error: function (error) {
+                    console.error("Erreur AJAX:", error);
+                    modal.find('.modal-body').html("Une erreur s'est produite lors de l'envoi du formulaire.");
+                }
+            });
+        });
 
-    // Pagination AJAX
-    prevPageBtn.addEventListener("click", () => {
-        if (currentPage > 1) {
-            fetchCartProducts(currentPage - 1);
-        }
+        $('#cartProductModal').on('click', '[data-bs-dismiss="modal"]', function () {
+            $('#cartProductModal').modal('hide');
+        });
     });
-    nextPageBtn.addEventListener("click", () => {
-        fetchCartProducts(currentPage + 1);
-    });
-
-    // Export Excel
-    exportExcelBtn.addEventListener("click", () => {
-        const searchVal = searchInput.value.trim();
-        let url = "/cart-products/?export=excel";
-        if (searchVal) {
-            url += "&search=" + encodeURIComponent(searchVal);
-        }
-        window.location.href = url; // Téléchargement
-    });
-});
 </script>
 {% endblock %}

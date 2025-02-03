@@ -1,0 +1,340 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}MR Map{% endblock %}
+
+{% block extra_head %}
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+ integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+ crossorigin=""/>
+<!-- Leaflet MarkerCluster CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+<!-- Leaflet Fullscreen CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.fullscreen/2.4.0/Control.FullScreen.css" />
+
+<style>
+ .map-container {
+     position: relative;
+     width: 100%;
+     height: calc(100vh - 100px);
+     min-height: 600px;
+ }
+
+ #map {
+     width: 100%;
+     height: 100%;
+     border: 1px solid #ccc;
+     border-radius: 8px;
+     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+ }
+
+ .legend {
+     padding: 10px;
+     background: white;
+     background-color: rgba(255, 255, 255, 0.9);
+     box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+     border-radius: 5px;
+     line-height: 24px;
+ }
+
+ .legend i {
+     width: 20px;
+     height: 20px;
+     float: left;
+     margin-right: 8px;
+     opacity: 0.7;
+ }
+
+ .legend .legend-item {
+     display: flex;
+     align-items: center;
+     margin-bottom: 5px;
+ }
+
+ .legend .color-box {
+     width: 20px;
+     height: 20px;
+     margin-right: 8px;
+     border: 1px solid #ccc;
+ }
+
+ .custom-popup .leaflet-popup-content-wrapper {
+     background: rgba(255, 255, 255, 0.9);
+     border-radius: 8px;
+     padding: 5px;
+ }
+
+ .custom-popup .leaflet-popup-content {
+     margin: 10px;
+     font-size: 14px;
+ }
+
+ .map-controls {
+     position: absolute;
+     top: 10px;
+     right: 10px;
+     z-index: 1000;
+     background: white;
+     padding: 10px;
+     border-radius: 8px;
+     box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+ }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+ <h1 class="text-3xl font-bold text-sky-800 mb-6 text-center">MR Map</h1>
+ <div class="map-container">
+     <div id="map"></div>
+     <div class="map-controls">
+         <div class="mb-4">
+             <label class="block text-sm font-medium text-gray-700">Layer Visibility</label>
+             <div class="mt-2 space-y-2">
+                 <label class="inline-flex items-center">
+                     <input type="checkbox" id="commune-layer" checked class="form-checkbox">
+                     <span class="ml-2">Communes</span>
+                 </label>
+                 <br>
+                 <label class="inline-flex items-center">
+                     <input type="checkbox" id="wilaya-layer" checked class="form-checkbox">
+                     <span class="ml-2">Wilayas</span>
+                 </label>
+                 <br>
+                 <label class="inline-flex items-center">
+                     <input type="checkbox" id="moughataa-layer" checked class="form-checkbox">
+                     <span class="ml-2">Moughataas</span>
+                 </label>
+                 <br>
+                 <label class="inline-flex items-center">
+                     <input type="checkbox" id="pos-layer" checked class="form-checkbox">
+                     <span class="ml-2">Points of Sale</span>
+                 </label>
+             </div>
+         </div>
+     </div>
+ </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+ integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+ crossorigin=""></script>
+<!-- Leaflet MarkerCluster JS -->
+<script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+<!-- Leaflet Fullscreen JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.fullscreen/2.4.0/Control.FullScreen.min.js"></script>
+
+<script>
+// Declare global variables for the map and layers
+var map, communeLayer, wilayaLayer, markersLayer,MoughataaLayer;
+
+function initializeMap() {
+    // Initialize the map and assign it to the global variable
+    map = L.map('map', { fullscreenControl: true }).setView([20.5, -10.5], 6);
+
+    // Add a base layer (OpenStreetMap)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 19
+    }).addTo(map);
+
+    // Initialize our layers and assign to global variables
+    communeLayer = L.featureGroup();
+    wilayaLayer = L.featureGroup();
+    MoughataaLayer = L.featureGroup();
+    markersLayer = L.markerClusterGroup();
+
+    // Load and add the communes GeoJSON layer
+    $.getJSON("", function(data) {
+        console.log("Commune data:", data);
+        L.geoJSON(data, {
+            style: function(feature) {
+                var inpcValue = feature.properties.inpc;
+                return {
+                    fillColor: getColorForINPC(inpcValue),
+                    weight: 1,
+                    opacity: 1,
+                    color: 'white',
+                    dashArray: '3',
+                    fillOpacity: 0.7
+                };
+            },
+            onEachFeature: function(feature, layer) {
+                var inpcVal = feature.properties.inpc;
+                if (inpcVal === null || inpcVal === undefined) {
+                    inpcVal = 'N/A';
+                } else {
+                    inpcVal = parseFloat(inpcVal).toFixed(2);
+                }
+                layer.bindPopup(
+                    `<strong>Commune:</strong> ${feature.properties.name}<br>` +
+                    `<strong>INPC:</strong> ${inpcVal}`
+                );
+            }
+        }).addTo(communeLayer);
+    }).fail(function(jqXHR, textStatus, error) {
+        console.error("Failed to load commune data:", error);
+    });
+
+    // Load and add the wilayas GeoJSON layer with proper styling
+    $.getJSON("{% url 'wilaya-geojson-api' %}", function(data) {
+        console.log("Wilaya data:", data);
+        L.geoJSON(data, {
+            style: function(feature) {
+                var inpcValue = feature.properties.inpc;
+                return {
+                    fillColor: getColorForINPC(inpcValue),
+                    weight: 2,
+                    opacity: 1,
+                    color: '#2c5282',
+                    dashArray: '3',
+                    fillOpacity: 0.7
+                };
+            },
+            onEachFeature: function(feature, layer) {
+                var inpcVal = feature.properties.inpc;
+                if (inpcVal === null || inpcVal === undefined) {
+                    inpcVal = 'N/A';
+                } else {
+                    inpcVal = parseFloat(inpcVal).toFixed(2);
+                }
+                layer.bindPopup(
+                    `<strong>Wilaya:</strong> ${feature.properties.name}<br>` +
+                    `<strong>INPC:</strong> ${inpcVal}`
+                );
+            }
+        }).addTo(wilayaLayer);
+    }).fail(function(jqXHR, textStatus, error) {
+        console.error("Failed to load wilaya data:", error);
+    });
+     // Load and add the wilayas GeoJSON layer with proper styling
+    $.getJSON("{% url 'moughataa-geojson' %}", function(data) {
+        console.log("Moughataa data:", data);
+        L.geoJSON(data, {
+            style: function(feature) {
+                var inpcValue = feature.properties.inpc;
+                return {
+                    fillColor: getColorForINPC(inpcValue),
+                    weight: 2,
+                    opacity: 1,
+                    color: '#2c5282',
+                    dashArray: '3',
+                    fillOpacity: 0.7
+                };
+            },
+            onEachFeature: function(feature, layer) {
+                var inpcVal = feature.properties.inpc;
+                if (inpcVal === null || inpcVal === undefined) {
+                    inpcVal = 'N/A';
+                } else {
+                    inpcVal = parseFloat(inpcVal).toFixed(2);
+                }
+                layer.bindPopup(
+                    `<strong>Moughataa:</strong> ${feature.properties.name}<br>` +
+                    `<strong>INPC:</strong> ${inpcVal}`
+                );
+            }
+        }).addTo(MoughataaLayer);
+    }).fail(function(jqXHR, textStatus, error) {
+        console.error("Failed to load Moughataa data:", error);
+    });
+    // Load and add the points of sale GeoJSON layer
+    $.getJSON("{% url 'pointofsale-list-api' %}", function(data) {
+        data.forEach(function(pos) {
+            var marker = L.marker([pos.gps_lat, pos.gps_lon]);
+            marker.bindPopup(
+                `<strong>Point of Sale:</strong> ${pos.code}<br>` +
+                `<strong>Type:</strong> ${pos.type}`
+            );
+            markersLayer.addLayer(marker);
+        });
+    }).fail(function(jqXHR, textStatus, error) {
+        console.error("Failed to load points of sale data:", error);
+    });
+
+    // Add all layers to the map by default
+    map.addLayer(communeLayer);
+    map.addLayer(wilayaLayer);
+    map.addLayer(MoughataaLayer);
+    map.addLayer(markersLayer);
+
+    // Add the legend
+    var legend = createLegend();
+    legend.addTo(map);
+}
+
+function getColorForINPC(inpc) {
+    return inpc > 150 ? '#810f7c' :
+           inpc > 120 ? '#8856a7' :
+           inpc > 100 ? '#8c96c6' :
+           inpc > 90  ? '#b3cde3' :
+           inpc > 80  ? '#edf8fb' :
+           inpc > 70  ? '#f6eff7' :
+                       '#f7fcfd';
+}
+
+function createLegend() {
+    var legend = L.control({position: 'bottomright'});
+    legend.onAdd = function (map) {
+        var div = L.DomUtil.create('div', 'info legend'),
+            grades = [0, 70, 80, 90, 100, 120, 150],
+            labels = [];
+        div.innerHTML += '<h4 class="font-bold mb-2">INPC Index</h4>';
+        for (var i = 0; i < grades.length; i++) {
+            div.innerHTML +=
+                '<div class="legend-item">' +
+                    '<i style="background:' + getColorForINPC(grades[i] + 1) + '"></i> ' +
+                    grades[i] + (grades[i + 1] ? '–' + grades[i + 1] + '<br>' : '+') +
+                '</div>';
+        }
+        return div;
+    };
+    return legend;
+}
+
+$(document).ready(function() {
+    // Initialize the map and layers
+    initializeMap();
+
+    // Attach event listeners to the layer visibility checkboxes
+    $('#commune-layer').change(function() {
+        if ($(this).is(':checked')) {
+            map.addLayer(communeLayer);
+        } else {
+            map.removeLayer(communeLayer);
+        }
+    });
+
+    $('#wilaya-layer').change(function() {
+        if ($(this).is(':checked')) {
+            map.addLayer(wilayaLayer);
+        } else {
+            map.removeLayer(wilayaLayer);
+        }
+    });
+    $('#moughataa-layer').change(function() {
+        if ($(this).is(':checked')) {
+            map.addLayer(MoughataaLayer);
+        } else {
+            map.removeLayer(MoughataaLayer);
+        }
+    });
+
+    $('#pos-layer').change(function() {
+        if ($(this).is(':checked')) {
+            map.addLayer(markersLayer);
+        } else {
+            map.removeLayer(markersLayer);
+        }
+    });
+});
+</script>
+
+{% endblock %}

@@ -23,7 +23,8 @@ class Product(models.Model):
 class Wilaya(models.Model):
     name = models.CharField(max_length=255)
     code = models.CharField(max_length=50, unique=True)
-
+    inpc = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True) # Add INPC field
+    polygon = models.TextField(null=True, blank=True)
     def __str__(self):
         return self.name
 
@@ -31,7 +32,8 @@ class Moughataa(models.Model):
     name = models.CharField(max_length=255, null=True, blank=True)
     code = models.CharField(max_length=50, unique=True)
     wilaya = models.ForeignKey(Wilaya, on_delete=models.CASCADE, related_name="moughataas")
-
+    inpc = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True) # Add INPC field
+    polygon = models.TextField(null=True, blank=True)    
     def __str__(self):
         return self.name
 
@@ -39,7 +41,8 @@ class Commune(models.Model):
     name = models.CharField(max_length=255)
     code = models.CharField(max_length=50, unique=True)
     moughataa = models.ForeignKey(Moughataa, on_delete=models.CASCADE, related_name="communes")
-
+    inpc = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True) # Add INPC field
+    polygon = models.TextField(null=True, blank=True) 
     def __str__(self):
         return self.name
 
@@ -77,6 +80,7 @@ class CartProducts(models.Model):
     weight = models.DecimalField(max_digits=5, decimal_places=2)  # Utilisez DecimalField
     date_from = models.DateField()
     date_to = models.DateField(null=True, blank=True)
+    price = models.ForeignKey(ProductPrice, on_delete=models.CASCADE, null=True, blank=True)  # Direct link to the applicable price
 
     def __str__(self):
         return f"{self.cart.name} - {self.product.name}"

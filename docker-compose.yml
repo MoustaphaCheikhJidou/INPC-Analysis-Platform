@@ -12,15 +12,15 @@ services:
     ports:
       - "127.0.0.1:23231:8000"  # Port hôte changé à 23231
     depends_on:
-      mydb_23231:
+      mydb-23231:
         condition: service_healthy
     environment:
       - DEBUG=1  # Définir DEBUG=0 en production
       - DATABASE_URL=mysql://django_user:django_password@mydb:3306/django_db
 
-  mydb_23231:
+  mydb-23231:
     image: mysql:8.0
-    container_name: mydb_23231
+    container_name: mydb-23231
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root_password

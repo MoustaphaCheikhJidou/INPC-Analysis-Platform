@@ -5,31 +5,31 @@
 {% block content %}
 <div class="container mt-5">
     {% if messages %}
-    {% for msg in messages %}
-    <div class="alert alert-{{ msg.tags }}">{{ msg }}</div>
-    {% endfor %}
+        {% for msg in messages %}
+            <div class="alert alert-{{ msg.tags }}">{{ msg }}</div>
+        {% endfor %}
     {% endif %}
 
-    <h1 class="text-center mb-4">Liste des Types de Produits</h1>
+    <h1 class="mb-4 text-center text-2xl font-bold text-sky-800">Liste des Types de Produits</h1>
 
-    <form method="GET" class="mb-4">
-        <div class="row g-3">
-            <div class="col-md-3">
-                <label for="searchInput" class="form-label">Recherche :</label>
-                <input type="text" id="searchInput" name="search" class="form-control" placeholder="Code, label, description..." value="{{ search }}">
-            </div>
-            <div class="col-md-3 d-flex align-items-end">
-                <button type="submit" class="btn btn-secondary w-100">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <form method="GET" class="mb-4">
+            <div class="flex">
+                <input type="text" id="searchInput" name="search" class="w-full px-3 py-2 border rounded-l-md focus:outline-none focus:ring-2 focus:ring-sky-500" placeholder="Recherche (code, label, description...)" value="{{ search }}">
+                <button type="submit" class="px-4 py-2 bg-sky-600 text-white rounded-r-md hover:bg-sky-700 transition-colors duration-200">
                     Rechercher
                 </button>
             </div>
+        </form>
+    
+        <div class="flex justify-end space-x-2">
+            <button id="exportExcelBtn" style='height: 40px;' class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors duration-200">
+                Exporter en Excel
+            </button>
+            <button type="button" style='height: 40px;' class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200" data-bs-toggle="modal" data-bs-target="#productTypeModal" data-url="{% url 'producttype-create' %}">
+                Ajouter
+            </button>
         </div>
-    </form>
-
-    <div class="mb-3">
-        <button id="exportExcelBtn" class="btn btn-success">
-            Exporter en Excel
-        </button>
     </div>
 
     <form method="POST" action="{% url 'producttype-import' %}" enctype="multipart/form-data" class="mb-4">
@@ -40,48 +40,57 @@
         </div>
     </form>
 
-    <a href="{% url 'producttype-create' %}" class="btn btn-primary mb-3">Ajouter un Type de Produit</a>
-
-    <table class="table table-bordered">
-        <thead class="table-dark">
-            <tr>
-                <th>Code</th>
-                <th>Label</th>
-                <th>Description</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody id="productTypeTableBody">
-            {% for producttype in page_obj %}
-            <tr>
-                <td>{{ producttype.code }}</td>
-                <td>{{ producttype.label }}</td>
-                <td>{{ producttype.description }}</td>
-                <td>
-                    <a href="{% url 'producttype-detail' producttype.pk %}" class="btn btn-info btn-sm">Voir</a>
-                    <a href="{% url 'producttype-update' producttype.pk %}" class="btn btn-warning btn-sm">Modifier</a>
-                    <a href="{% url 'producttype-delete' producttype.pk %}" class="btn btn-danger btn-sm">Supprimer</a>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="4" class="text-center">
-                    Aucun type de produit n'a été trouvé.
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
+    <div class="overflow-x-auto">
+        <table class="min-w-full bg-white border border-gray-300 rounded-lg shadow-md">
+            <thead class="bg-sky-700 text-white">
+                <tr>
+                    <th class="py-2 px-4 border-b text-left">Code</th>
+                    <th class="py-2 px-4 border-b text-left">Label</th>
+                    <th class="py-2 px-4 border-b text-left">Description</th>
+                    <th class="py-2 px-4 border-b text-left">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="productTypeTableBody">
+                {% for producttype in page_obj %}
+                <tr class="hover:bg-sky-100 transition-colors duration-200">
+                    <td class="py-2 px-4 border-b">{{ producttype.code }}</td>
+                    <td class="py-2 px-4 border-b">{{ producttype.label }}</td>
+                    <td class="py-2 px-4 border-b">{{ producttype.description }}</td>
+                    <td class="py-2 px-4 border-b">
+                        <button type="button" class="btn btn-info btn-sm hover:bg-sky-300 transition-colors duration-200" data-bs-toggle="modal" data-bs-target="#productTypeModal" data-url="{% url 'producttype-detail' producttype.pk %}">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button type="button" class="btn btn-warning btn-sm hover:bg-yellow-200 transition-colors duration-200" data-bs-toggle="modal" data-bs-target="#productTypeModal" data-url="{% url 'producttype-update' producttype.pk %}">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="btn btn-danger btn-sm hover:bg-red-200 transition-colors duration-200" data-bs-toggle="modal" data-bs-target="#productTypeModal" data-url="{% url 'producttype-delete' producttype.pk %}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="py-2 px-4 border-b text-center">
+                        Aucun type de produit n'a été trouvé.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
     {% if page_obj.has_other_pages %}
-    <nav id="staticPagination" class="mt-3">
-        <ul class="pagination">
+    <nav aria-label="Pagination Product Types" class="mt-3" id="staticPagination">
+        <ul class="pagination justify-content-center">
             {% if page_obj.has_previous %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.previous_page_number }}&search={{ search }}">
-                    Précédent
-                </a>
-            </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&search={{ search }}">
+                        Précédent
+                    </a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">Précédent</span>
+                </li>
             {% endif %}
             <li class="page-item disabled">
                 <span class="page-link">
@@ -89,29 +98,65 @@
                 </span>
             </li>
             {% if page_obj.has_next %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.next_page_number }}&search={{ search }}">
-                    Suivant
-                </a>
-            </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&search={{ search }}">
+                        Suivant
+                    </a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">Suivant</span>
+                </li>
             {% endif %}
         </ul>
     </nav>
-    {% endif %}
-
-    <nav class="mt-3 d-none" id="ajaxPagination">
+{% else %}
+    <nav aria-label="Pagination Product Types" class="mt-3" id="staticPagination">
         <ul class="pagination justify-content-center">
-            <li class="page-item">
-                <button class="page-link" id="prevPageBtn">Précédent</button>
+            <li class="page-item disabled">
+                <span class="page-link">Précédent</span>
             </li>
             <li class="page-item disabled">
-                <span class="page-link" id="pageInfo">Page ? / ?</span>
+                <span class="page-link">
+                    Page 1 / 1
+                </span>
             </li>
-            <li class="page-item">
-                <button class="page-link" id="nextPageBtn">Suivant</button>
+            <li class="page-item disabled">
+                <span class="page-link">Suivant</span>
             </li>
         </ul>
     </nav>
+{% endif %}
+
+<nav aria-label="Pagination Product Types" class="mt-3 d-none" id="ajaxPagination">
+    <ul class="pagination justify-content-center">
+        <li class="page-item">
+            <button id="prevPageBtn" class="page-link" {% if not page_obj.has_previous %}disabled{% endif %}>Précédent</button>
+        </li>
+        <li class="page-item disabled">
+            <span id="pageInfo" class="page-link">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+        </li>
+        <li class="page-item">
+            <button id="nextPageBtn" class="page-link" {% if not page_obj.has_next %}disabled{% endif %}>Suivant</button>
+        </li>
+    </ul>
+</nav>
+   </div>
+
+<!-- Modal -->
+<div class="modal fade" id="productTypeModal" tabindex="-1" aria-labelledby="productTypeModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content rounded-lg shadow-lg">
+                <div class="modal-header bg-sky-700 text-white rounded-t-lg">
+                    <h5 class="modal-title" id="productTypeModalLabel"></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4" id="productTypeModalBody">
+                    <!-- AJAX content will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -159,9 +204,15 @@
                         <td>${pt.label}</td>
                         <td>${pt.description}</td>
                         <td>
-                            <a href="{% url 'producttype-detail' 0 %}".replace('0', pt.id) class="btn btn-info btn-sm">Voir</a>
-                            <a href="{% url 'producttype-update' 0 %}".replace('0', pt.id) class="btn btn-warning btn-sm">Modifier</a>
-                            <a href="{% url 'producttype-delete' 0 %}".replace('0', pt.id) class="btn btn-danger btn-sm">Supprimer</a>
+                            <button type="button" class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#productTypeModal" data-url="{% url 'producttype-detail' 0 %}".replace('0', pt.id)>
+                                Voir
+                            </button>
+                            <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#productTypeModal" data-url="{% url 'producttype-update' 0 %}".replace('0', pt.id)>
+                                Modifier
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#productTypeModal" data-url="{% url 'producttype-delete' 0 %}".replace('0', pt.id)>
+                                Supprimer
+                            </button>
                         </td>
                     `;
                     productTypeTableBody.appendChild(row);
@@ -197,6 +248,59 @@
                 url += "&search=" + encodeURIComponent(searchVal);
             }
             window.location.href = url;
+        });
+
+        // Modal show event
+        $('#productTypeModal').on('show.bs.modal', function (event) {
+            const button = $(event.relatedTarget); // Button that triggered the modal
+            const url = button.data('url'); // Extract info from data-url attribute
+            const modal = $(this);
+
+            // AJAX call to get the modal content
+            $.ajax({
+                url: url,
+                method: 'GET',
+                success: function (data) {
+                    modal.find('.modal-body').html(data);
+                },
+                error: function (error) {
+                    console.error("Erreur AJAX:", error);
+                    modal.find('.modal-body').html("Une erreur s'est produite lors du chargement du contenu.");
+                }
+            });
+        });
+
+        // Form submission via AJAX
+        $('#productTypeModal').on('submit', 'form', function (event) {
+            event.preventDefault();
+            const form = $(this);
+            const modal = $('#productTypeModal');
+
+            $.ajax({
+                url: form.attr('action'),
+                method: form.attr('method'),
+                data: form.serialize(),
+                success: function (response) {
+                    if (response.success) {
+                        // Update the product type list
+                        fetchProductTypes();
+                        modal.modal('hide');
+                        // Optional: Display a success message
+                        alert(response.message);
+                    } else {
+                        // Display errors
+                        modal.find('.modal-body').html(response.form_html);
+                    }
+                },
+                error: function (error) {
+                    console.error("Erreur AJAX:", error);
+                    modal.find('.modal-body').html("Une erreur s'est produite lors de l'envoi du formulaire.");
+                }
+            });
+        });
+
+        $('#productTypeModal').on('click', '[data-bs-dismiss="modal"]', function () {
+            $('#productTypeModal').modal('hide');
         });
     });
 </script>

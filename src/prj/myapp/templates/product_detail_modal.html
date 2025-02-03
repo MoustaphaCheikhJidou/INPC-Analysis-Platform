@@ -1,0 +1,21 @@
+<div class="p-4">
+    <dl class="grid grid-cols-2 gap-4">
+        <dt class="font-semibold text-gray-700">ID:</dt>
+        <dd class="text-gray-900">{{ product.id }}</dd>
+        
+        <dt class="font-semibold text-gray-700">Code:</dt>
+        <dd class="text-gray-900">{{ product.code }}</dd>
+        
+        <dt class="font-semibold text-gray-700">Nom:</dt>
+        <dd class="text-gray-900">{{ product.name }}</dd>
+        
+        <dt class="font-semibold text-gray-700">Description:</dt>
+        <dd class="text-gray-900">{{ product.description }}</dd>
+
+        <dt class="font-semibold text-gray-700">Unité de mesure:</dt>
+        <dd class="text-gray-900">{{ product.unit_measure }}</dd>
+
+        <dt class="font-semibold text-gray-700">Type de produit:</dt>
+        <dd class="text-gray-900">{{ product.product_type.label }}</dd>
+    </dl>
+</div>

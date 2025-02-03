@@ -43,9 +43,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'myapp',
     'users',  # Assurez-vous que cette ligne est présente
-    'crispy_forms', 
-    'crispy_bootstrap4',
-    'chartjs',
+    "crispy_forms", 
+    "crispy_bootstrap4",  # Add this
+    'rest_framework',      # Add this # Add this
 ]
 
 MIDDLEWARE = [

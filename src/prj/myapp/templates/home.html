@@ -3,6 +3,10 @@
 
 {% block content %}
 <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+     <div class="flex justify-end mb-4">
+           <a href="{% url 'generate_report_pdf' %}" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Générer Rapport</a>
+              <a href="{% url 'data-collection' %}" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 ml-2">Formulaire de Collecte</a>
+        </div>
     <h1 class="text-3xl font-bold text-gray-800 mb-6">Tableau de bord INPC</h1>
 
     <!-- ✅ Aperçu des Statistiques -->
@@ -65,6 +69,30 @@
         <div class="bg-white rounded-lg p-4 shadow">
             <h2 class="text-lg font-bold text-gray-800 mb-3">Pondération Totale par Panier</h2>
             <canvas id="totalWeightByCartChart"></canvas>
+        </div>
+    </div>
+     <!-- Tableau INPC -->
+    <div class="bg-white rounded-lg p-4 shadow">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">Tableau INPC - Derniers 6 Mois</h2>
+        <div class="overflow-x-auto">
+            <table class="table table-striped table-bordered w-full">
+                <thead class="table-primary">
+                    <tr>
+                        <th>Mois</th>
+                        <th>Année</th>
+                        <th>INPC (%)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for data in inpc_data %}
+                    <tr>
+                        <td>{{ data.month_name }}</td>
+                        <td>{{ data.year }}</td>
+                        <td>{{ data.inpc }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 </div>

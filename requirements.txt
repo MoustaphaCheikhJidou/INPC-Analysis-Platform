@@ -9,4 +9,7 @@ crispy-bootstrap4
 Pillow
 matplotlib
 seaborn
-django-chartjs
+django-bootstrap4
+gunicorn
+djangorestframework
+reportlab
